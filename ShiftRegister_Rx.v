@@ -12,27 +12,29 @@
 //          Sub module:
 //                  
 // Input Signal List:
-//      1   |   clk :   clock signal
-//      2   |   rst :   reset signal
+//      1   |   clk         :   clock signal
+//      2   |   rst         :   reset signal
+//      3   |   AcqSig_i    :   the acquisition signal 
 // Output Signal List:
 //      1   |     
 //              
 // -----------------------------------------------------------------------------
 module ShiftRegister_Rx(
-    input           clk,
-    input           rst,
+    // System signal definition
+        input           clk,
+        input           rst,
     // the interface with the BaudrateModule
-    input           AcqSig_i,
+        input           AcqSig_i,
     // the interface with the FSM_Rx module
-    input   [4:0]   State_i,
-    input   [3:0]   
-
+        input   [4:0]   State_i,
+    // the sychronization signal
+        output          Rx_Synch_o // at the falling edge of the RX when the state machine is idle
 
     );
     // register definition
         reg [2:0]   shift_reg_r;
         reg [15:0]  serial_reg_r;
-        reg [15:0]  bit_width_cnt_r;   // this register was applied to measure the width of the rx signal 
+        reg [3:0]   bit_width_cnt_r;   // this register was applied to measure the width of the rx signal 
     // wire definition 
         wire        falling_edge_rx_w;  // the falling edge of the rx port
         wire        rising_edge_rx_w;   // the rising edge of the rx port(reserved maybe no applied)
@@ -41,6 +43,7 @@ module ShiftRegister_Rx(
     // wire assign 
         assign falling_edge_rx_w    = shift_reg_r[2] & !shift_reg_r[1]; // falling edge of the rx
         assign rising_edge_rx_w     = !shift_reg_r[2]&  shift_reg_r[1];
+        assign Rx_Synch_o           = falling_edge_rx_w & (State_i == IDLE);
     // Shift register operation definition
         always @(posedge clk or negedge rst) begin
             if (!rst) begin

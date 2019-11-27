@@ -29,6 +29,9 @@ module ShiftRegister_Rx(
         input           Rx_i,
     // the interface with the FSM_Rx module
         input   [4:0]   State_i,
+        input           BitCounter_i,   // the index of the bit in the byte
+    // the output of the module
+        output  [11:0]  Byte_o,     // the output of the shift register, including the data bits and the parity bit
     // the sychronization signal
         output          Rx_Synch_o // at the falling edge of the RX when the state machine is idle
     );
@@ -40,7 +43,11 @@ module ShiftRegister_Rx(
         wire        falling_edge_rx_w;  // the falling edge of the rx port
         wire        rising_edge_rx_w;   // the rising edge of the rx port(reserved maybe no applied)
     // parameter definition
-        parameter   IDLE    = 5'b0_0000;
+        parameter   IDLE        = 5'b0_0001;   
+        parameter   STARTBIT    = 5'b0_0010;
+        parameter   DATABITS    = 5'b0_0100;
+        parameter   PARITYBIT   = 5'b0_1000;
+        parameter   STOPBIT     = 5'b1_0000;
     // wire assign 
         assign falling_edge_rx_w    = shift_reg_r[2] & !shift_reg_r[1]; // falling edge of the rx
         assign rising_edge_rx_w     = !shift_reg_r[2]&  shift_reg_r[1];

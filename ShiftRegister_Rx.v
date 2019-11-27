@@ -25,11 +25,12 @@ module ShiftRegister_Rx(
         input           rst,
     // the interface with the BaudrateModule
         input           AcqSig_i,
+    // the interface of the RX core
+        input           Rx_i,
     // the interface with the FSM_Rx module
         input   [4:0]   State_i,
     // the sychronization signal
         output          Rx_Synch_o // at the falling edge of the RX when the state machine is idle
-
     );
     // register definition
         reg [2:0]   shift_reg_r;
@@ -56,5 +57,32 @@ module ShiftRegister_Rx(
                 shift_reg_r <= shift_reg_r;
             end
         end
-    // serial data 
+    // serial data register operation  *the acquisition point* 
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                serial_reg_r <= 16'd0;                
+            end
+            else if (AcqSig_i == 1'b1) begin
+                serial_reg_r <= {serial_reg_r[14:0],shift_reg_r[2]};
+            end
+            else begin
+                serial_reg_r <= serial_reg_r;
+            end
+        end
+    // bit width counter,Once the system was synchronized the counter is started until the end of the byte
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                bit_width_cnt_r <= 4'd0;                
+            end
+            else if (Rx_Synch_o == 1'b1) begin // Once the system was synchronized
+                bit_width_cnt_r <= 4'd1;
+            end
+            else if ((State_i != IDLE) && (AcqSig_i == 1'b1)) begin
+                bit_width_cnt_r <= bit_width_cnt_r + 1'b1;
+            end
+            else begin
+                bit_width_cnt_r <= bit_width_cnt_r;
+            end
+        end
+    // 
 endmodule

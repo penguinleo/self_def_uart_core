@@ -25,9 +25,11 @@
 // Output Signal List:
 //      1   |     
 //  
-// Note:     2019-12-02
+// Note:    2019-12-02
 //              1.  The bit_width_cnt_r is better to be reinforced by tri-mode redundancy design;
 //              2.  The byte_r is better to be reinforced by tri-mode redundancy design;
+//          2019-12-03
+//              1.  The Bit_Synch_o signal is trigger signal for the FSM, it is an important signal;
 // -----------------------------------------------------------------------------
 module ShiftRegister_Rx(
     // System signal definition
@@ -43,6 +45,7 @@ module ShiftRegister_Rx(
     // the output of the module
         output  [11:0]  Byte_o,     // the output of the shift register, including the data bits and the parity bit
     // the sychronization signal
+        output          Bit_Synch_o, // a bit has been received,the bit width counter has finish
         output          Rx_Synch_o // at the falling edge of the RX when the state machine is idle
     );
     // register definition
@@ -66,6 +69,7 @@ module ShiftRegister_Rx(
         assign falling_edge_rx_w    = shift_reg_r[2] & !shift_reg_r[1]; // falling edge of the rx
         assign rising_edge_rx_w     = !shift_reg_r[2]&  shift_reg_r[1];
         assign Rx_Synch_o           = falling_edge_rx_w & (State_i == IDLE);
+        assign Bit_Synch_o          = bit_width_cnt_r[0] & bit_width_cnt_r[1] & bit_width_cnt_r[2] & bit_width_cnt_r[3];
     // Shift register operation definition
         always @(posedge clk or negedge rst) begin
             if (!rst) begin

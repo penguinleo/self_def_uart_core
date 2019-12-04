@@ -75,6 +75,7 @@ module ShiftRegister(
             parameter BIT4      = 4'd4;
             parameter BIT5      = 4'd5;
             parameter BIT6      = 4'd6;
+            parameter BIT7      = 4'd7;
     // assignment
         // output assign
             assign n_FifoRe_o   = n_fifo_rd_r;

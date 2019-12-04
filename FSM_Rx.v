@@ -47,4 +47,77 @@ module FSM_Rx(
     // wire definition
     	wire [4:0]		state_w; // triple mode result output
     	wire [3:0]		bit_counter_w;
+    // parameter definition
+    	// state machine definition
+    		parameter INTERVAL  = 5'b0_0001;
+            parameter STARTBIT  = 5'b0_0010;
+            parameter DATABITS  = 5'b0_0100;
+            parameter PARITYBIT = 5'b0_1000;
+            parameter STOPBIT   = 5'b1_0000;
+    // wire assign
+    	assign state_w 			= (state_A_r & state_B_r)
+    							& (state_B_r & state_C_r)
+    							& (state_C_r & state_A_r);
+    	assign bit_counter_w 	= (bit_counter_A_r & bit_counter_B_r)
+    							& (bit_counter_B_r & bit_counter_C_r)
+    							& (bit_counter_C_r & bit_counter_A_r);
+    	assign State_o 			= state_w;
+   	// data bits counter module
+   		always @(posedge clk or negedge rst) begin
+   		 	if (!rst) begin
+   		 		bit_counter_A_r <= 4'd0;
+   		 		bit_counter_B_r <= 4'd0;
+   		 		bit_counter_C_r <= 4'd0;   		 		
+   		 	end
+   		 	else if ((state_w == DATABITS) & (Rx_Synch_i != 1'b1)) begin
+   		 		bit_counter_A_r <= bit_counter_w;
+				bit_counter_B_r <= bit_counter_w;
+				bit_counter_C_r <= bit_counter_w;
+   		 	end
+   		 	else if ((state_w == DATABITS) & (Rx_Synch_i == 1'b1)) begin
+   		 		bit_counter_A_r <= bit_counter_A_r + 1'b1;
+				bit_counter_B_r <= bit_counter_B_r + 1'b1;
+				bit_counter_C_r <= bit_counter_C_r + 1'b1;
+   		 	end
+   		 	else begin
+   		 		bit_counter_A_r <= 4'd0;
+				bit_counter_B_r <= 4'd0;
+				bit_counter_C_r <= 4'd0;
+   		 	end
+   		 end 
+   	// state machine module
+   		always @(posedge clk or negedge rst) begin
+   			if (!rst) begin
+				state_A_r <= INTERVAL;   				
+				state_B_r <= INTERVAL;
+				state_C_r <= INTERVAL; 				
+   			end
+   			else begin
+   				case(state_w)
+   					INTERVAL: begin
+   						if (Rx_Synch_i == 1'b1) begin
+							state_A_r <= STARTBIT;   							
+							state_B_r <= STARTBIT;
+							state_C_r <= STARTBIT;
+   						end
+   						else begin
+   							state_A_r <= INTERVAL;   							
+							state_B_r <= INTERVAL;
+							state_C_r <= INTERVAL;
+   						end
+   					end
+   					STARTBIT: begin
+   						
+   					end
+   					DATABITS: begin
+   						
+   					end
+   					PARITYBIT: begin
+   						
+   					end
+   					STOPBIT: begin
+   						
+   					end
+   			end
+   		end
 endmodule

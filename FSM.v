@@ -74,6 +74,7 @@ module FSM(
                                 | (bit_counter_B_r & bit_counter_C_r) 
                                 | (bit_counter_C_r & bit_counter_A_r);
         assign BitCounter_o     = bit_counter_w;
+        assign State_o          = state_w;
     // data bits counter module
         always @(posedge clk or negedge rst) begin
             if (!rst) begin

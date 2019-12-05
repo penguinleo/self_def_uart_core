@@ -11,18 +11,29 @@
 //          The state definition is described as below.
 //          INTERVAL    :   It is an idle state, that there is not data on the wire. Once the level
 //                          once the signal wire is pulled down, the state machine should move to Startbit
-//          STARTBIT    :   It is the start bit of the byte, always 0.
+// 							This state better last at least 1 bit time. But considering the asynchronous equipments,
+// 							the receiving core should be ready, in other words, the receiving core could be sychronized
+// 							at any time in the INTERVAL state, regardless the state hold time. Be carefull
+//          STARTBIT    :   It is the start bit of the byte, always 0. This state would jump to data bits state 
+// 							once the ShiftRegister_Rx give out Bit_Synch_i signal, which means the bit has finished passing.
+// 			DATABITS 	: 	In this state, the rx core is receiving the data bit of a bytes, each Bit_Synch_i signal
+// 							means the ending of one data bit and the bit counter regisnter would gain.
+// 			PARITYBIT	:	It is the parity bit of the Byte state
+// 			STOPBIT		:	Each bytes must contain at leat 1bit stop bits.
 //          Up module:
 //              RxCore.v
 //          Sub module:
 //              -----
 // Input Signal List:
-//      1   |   clk         :   clock signal
-//      2   |   rst         :   reset signal
-//      3   |   
+//      1   |   clk         	:   clock signal
+//      2   |   rst         	:   reset signal
+//      3   |   Rx_Synch_i		:	The sychronation signal at the beginning of each byte
+// 		4	|	Bit_Synch_i 	:	The sychronation signal at the end of each bit, the state machine driver signal
+// 		5	|	AcqSig_i		:	The Acquisition signal from the Baudrate Generate Module, same signal with the ShiftRegister_Rx input signal.
+// 		7	|	ParityEnable_i	:	The Parity method control signal, from the control module
 // Output Signal List:
-//      1   |     
-//  
+//      1   |   State_o			:   The state machine output, define each bit in byte  
+//		2 	|	BitCounter_o	:	In the data receiving state, this output applied to define the index of the data bit.  
 // Note:  2019-12-05
 //          1,  Consider some over time error detect to self revover from some unexpected error,
 //              maybe watch dog is a good idea.
@@ -169,6 +180,7 @@ module FSM_Rx(
                             state_C_r <= STOPBIT;
                         end
                     end
+                endcase
             end
         end
 endmodule

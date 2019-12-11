@@ -35,7 +35,7 @@
 //      1   |   State_o			:   The state machine output, define each bit in byte  
 //		2 	|	BitCounter_o	:	In the data receiving state, this output applied to define the index of the data bit.  
 // Note:  2019-12-05
-//          1,  Consider some over time error detect to self revover from some unexpected error,
+//          1,  Consider some over time error detect to self recover from some unexpected error,
 //              maybe watch dog is a good idea.
 // -----------------------------------------------------------------------------
 module FSM_Rx(

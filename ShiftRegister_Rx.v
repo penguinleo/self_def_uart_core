@@ -26,10 +26,13 @@
 //      1   |     
 //  
 // Note:    2019-12-02
-//              1.  The bit_width_cnt_r is better to be reinforced by tri-mode redundancy design;
-//              2.  The byte_r is better to be reinforced by tri-mode redundancy design;
+//              1   |  Prob1    |   The bit_width_cnt_r is better to be reinforced by tri-mode redundancy design;
+//              2   |  Prob2    |   The byte_r is better to be reinforced by tri-mode redundancy design;
 //          2019-12-03
-//              1.  The Bit_Synch_o signal is trigger signal for the FSM, it is an important signal;
+//              1   |  Prob3    |   The Bit_Synch_o signal is trigger signal for the FSM, it is an important signal;
+//          2019-12-04
+//              1   |  Prob4    |   The FIFO write opperation is better to be inserted into the shiftresigter module;
+//           
 // -----------------------------------------------------------------------------
 module ShiftRegister_Rx(
     // System signal definition

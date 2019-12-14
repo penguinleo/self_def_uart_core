@@ -34,6 +34,7 @@ module FSM(
     input           p_BaudSig_i,
     input           p_FiFoEmpty_i,
     input           ParityEnable_i,
+    output          p_ParityCalTrigger_o,
     output [4:0]    State_o,
     output [3:0]    BitCounter_o
     );
@@ -51,6 +52,8 @@ module FSM(
             wire [4:0]  state_w;   //triple mode output
         // bit counter 
             wire [3:0]  bit_counter_w;
+        // trigger for parity calculate
+            wire        p_ParityCalTrigger_w;
     // parameter definition
         // state machine definition
             parameter INTERVAL  = 5'b0_0001;
@@ -75,6 +78,8 @@ module FSM(
                                 | (bit_counter_C_r & bit_counter_A_r);
         assign BitCounter_o     = bit_counter_w;
         assign State_o          = state_w;
+        assign p_ParityCalTrigger_o = p_ParityCalTrigger_w;
+        assign p_ParityCalTrigger_w = (bit_counter_w == 4'd0) && (BaudSig_i == 1'b1);
     // data bits counter module
         always @(posedge clk or negedge rst) begin
             if (!rst) begin

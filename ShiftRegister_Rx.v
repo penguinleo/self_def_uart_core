@@ -26,13 +26,15 @@
 //      1   |     
 //  
 // Note:    2019-12-02
-//              1   |  Prob1    |   The bit_width_cnt_r is better to be reinforced by tri-mode redundancy design;
-//              2   |  Prob2    |   The byte_r is better to be reinforced by tri-mode redundancy design;
+//              1   |   Prob1   |   The bit_width_cnt_r is better to be reinforced by tri-mode redundancy design;
+//              2   |   Prob2   |   The byte_r is better to be reinforced by tri-mode redundancy design;
 //          2019-12-03
-//              1   |  Prob3    |   The Bit_Synch_o signal is trigger signal for the FSM, it is an important signal;
+//              1   |   Prob3   |   The Bit_Synch_o signal is trigger signal for the FSM, it is an important signal;
 //          2019-12-04
-//              1   |  Prob4    |   The FIFO write opperation is better to be inserted into the shiftresigter module;
-//           
+//              1   |   Prob4   |   The FIFO write opperation is better to be inserted into the shiftresigter module;
+//          2019-12-14
+//              1   |   Ans4    |   Consider agian the Prob4 should be applied in other module! 
+//                                  The parity result bits was added into the byte_r, after the parity bits
 // -----------------------------------------------------------------------------
 module ShiftRegister_Rx(
     // System signal definition
@@ -45,6 +47,8 @@ module ShiftRegister_Rx(
     // the interface with the FSM_Rx module
         input   [4:0]   State_i,
         input   [3:0]   BitCounter_i,   // the index of the bit in the byte
+    // the interface with the parity generator module
+        input           ParityResult_i,
     // the output of the module
         output  [11:0]  Byte_o,     // the output of the shift register, including the data bits and the parity bit
     // the sychronization signal
@@ -56,6 +60,7 @@ module ShiftRegister_Rx(
         reg [15:0]  serial_reg_r;
         reg [3:0]   bit_width_cnt_r;   // this register was applied to measure the width of the rx signal 
         reg [11:0]  byte_r;             // this register is working like a shift register
+        reg         parity_error_r;     // the parity fail
     // wire definition 
         wire        falling_edge_rx_w;  // the falling edge of the rx port
         wire        rising_edge_rx_w;   // the rising edge of the rx port(reserved maybe no applied)
@@ -68,11 +73,15 @@ module ShiftRegister_Rx(
             parameter   STOPBIT     = 5'b1_0000;
         // the acquisition point definition
             parameter   ACQSITION_POINT = 4'd7;
+        // error definition
+            parameter   WRONG       = 1'b1;
+            parameter   RIGHT       = 1'b0;  
     // wire assign 
         assign falling_edge_rx_w    = shift_reg_r[2] & !shift_reg_r[1]; // falling edge of the rx
         assign rising_edge_rx_w     = !shift_reg_r[2]&  shift_reg_r[1];
         assign Rx_Synch_o           = falling_edge_rx_w & (State_i == IDLE);
         assign Bit_Synch_o          = bit_width_cnt_r[0] & bit_width_cnt_r[1] & bit_width_cnt_r[2] & bit_width_cnt_r[3];
+        assign Byte_o               = byte_r;
     // Shift register operation definition
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -131,6 +140,9 @@ module ShiftRegister_Rx(
             end
             else if ((State_i == PARITYBIT) && (bit_width_cnt_r == ACQSITION_POINT)) begin  // the parity bit if the FSM move to this state
                 byte_r <= {byte_r[10:0],shift_reg_r[2]};
+            end
+            else if ((State_i == PARITYBIT) && Bit_Synch_o) begin
+                byte_r <= {byte_r[10:0],ParityResult_i};
             end
             else if ((State_i == STOPBIT) && (bit_width_cnt_r == ACQSITION_POINT)) begin    // the stop bit
                 byte_r <= {byte_r[10:0],shift_reg_r[2]};

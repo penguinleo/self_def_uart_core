@@ -26,6 +26,7 @@
 //      1   :   n_FifoRe_o, the FIFO read signal, active low.
 //      2   :   ShiftData_o, the data in the shift register, could be synthesised
 //      3   :   SerialData_o, the bit data sent out by the shift register module, it is the uart tx port output
+//      4   :   p_ParityCalTrigger_w, the trigger signal to calculate the parity
 // -----------------------------------------------------------------------------
 module ShiftRegister(
     input           clk,

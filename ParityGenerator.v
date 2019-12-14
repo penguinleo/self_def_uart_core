@@ -22,14 +22,22 @@
 // Output Signal List:
 //      1   :   ParityResult_o, the parity calculate result.
 //      2   :   
-// 
+// Note     2019-12-14
+//              1   |   Prob1   |   The parity result calculate judgement is wrong, when using in the RxCore module! 
+//                                  the parity result is freshed at the wrong time. 
+//                                  According to the FSM of the TxCore the bit counter would keep
+//                                  gainning until the state machine jump to parity or stop state, in other words in the
+//                                  DATABITS state the bit counter would not be zero, except the first bit! Thus,
+//                                  the parity result would be wrong.
+//                                  This module is applied for TxCore only!
 // -----------------------------------------------------------------------------
 module ParityGenerator(
     input           clk,
     input           rst,
-    input           p_BaudSig_i,
+    // input           p_BaudSig_i,
     input [4:0]     State_i,
-    input [3:0]     BitCounter_i,
+    input           p_ParityCalTrigger_i,   // the trigger to start parity calculate
+    // input [3:0]     BitCounter_i,
     // input           ParityEnable_i, 
     input           ParityMethod_i, 
     input [7:0]     Data_i， 
@@ -81,10 +89,10 @@ module ParityGenerator(
                 parity_result_r <= 1'b1;                
             end
             else if (State_i == DATABITS) begin
-                if (BitCounter_i == BIT0 && p_BaudSig_i == 1'b1 && ParityMethod_i == EVEN) begin  // at the first bit ending time
+                if (p_ParityCalTrigger_i == 1'b1 && ParityMethod_i == EVEN) begin  // at the first bit ending time
                     parity_result_r <= byte_xor;
                 end
-                else if (BitCounter_i == BIT0 && p_BaudSig_i == 1'b1 && ParityMethod_i == ODD) begin
+                else if (p_ParityCalTrigger_i == 1'b1 && ParityMethod_i == ODD) begin
                     parity_result_r <= ~byte_xor;
                 end
                 else begin

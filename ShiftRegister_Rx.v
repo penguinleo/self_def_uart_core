@@ -46,7 +46,7 @@ module ShiftRegister_Rx(
         input           Rx_i,
     // the interface with the FSM_Rx module
         input   [4:0]   State_i,
-        input   [3:0]   BitCounter_i,   // the index of the bit in the byte
+        output  [3:0]   BitWidthCnt_o,   // the index of the bit in the byte
     // the interface with the parity generator module
         input           ParityResult_i,
     // the output of the module
@@ -73,6 +73,7 @@ module ShiftRegister_Rx(
             parameter   STOPBIT     = 5'b1_0000;
         // the acquisition point definition
             parameter   ACQSITION_POINT = 4'd7;
+            // parameter   PARITY_POINT    = ACQSITION_POINT + 1'b1;
         // error definition
             parameter   WRONG       = 1'b1;
             parameter   RIGHT       = 1'b0;  
@@ -82,6 +83,7 @@ module ShiftRegister_Rx(
         assign Rx_Synch_o           = falling_edge_rx_w & (State_i == IDLE);
         assign Bit_Synch_o          = bit_width_cnt_r[0] & bit_width_cnt_r[1] & bit_width_cnt_r[2] & bit_width_cnt_r[3];
         assign Byte_o               = byte_r;
+        assign BitWidthCnt_o        = bit_width_cnt_r;
     // Shift register operation definition
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -139,10 +141,7 @@ module ShiftRegister_Rx(
                 byte_r <= {byte_r[10:0],shift_reg_r[2]};
             end
             else if ((State_i == PARITYBIT) && (bit_width_cnt_r == ACQSITION_POINT)) begin  // the parity bit if the FSM move to this state
-                byte_r <= {byte_r[10:0],shift_reg_r[2]};
-            end
-            else if ((State_i == PARITYBIT) && Bit_Synch_o) begin
-                byte_r <= {byte_r[10:0],ParityResult_i};
+                byte_r <= {byte_r[9:0],shift_reg_r[2],ParityResult_i};  // at this point the parity calculated by this module and received parity bit are all ready
             end
             else if ((State_i == STOPBIT) && (bit_width_cnt_r == ACQSITION_POINT)) begin    // the stop bit
                 byte_r <= {byte_r[10:0],shift_reg_r[2]};

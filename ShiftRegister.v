@@ -121,13 +121,14 @@ module ShiftRegister(
             else if (State_i == DATABITS) begin
                 if (p_BigEnd_i == BIGEND) begin   // the high bit send first
                     case(BitCounter_i)
-                        BIT0:   serial_data_r <= shift_reg_r[6];
-                        BIT1:   serial_data_r <= shift_reg_r[5];
-                        BIT2:   serial_data_r <= shift_reg_r[4];
-                        BIT3:   serial_data_r <= shift_reg_r[3];
-                        BIT4:   serial_data_r <= shift_reg_r[2];
-                        BIT5:   serial_data_r <= shift_reg_r[1];
-                        BIT6:   serial_data_r <= shift_reg_r[0];
+                        BIT0:   serial_data_r <= shift_reg_r[7];
+                        BIT1:   serial_data_r <= shift_reg_r[6];
+                        BIT2:   serial_data_r <= shift_reg_r[5];
+                        BIT3:   serial_data_r <= shift_reg_r[4];
+                        BIT4:   serial_data_r <= shift_reg_r[3];
+                        BIT5:   serial_data_r <= shift_reg_r[2];
+                        BIT6:   serial_data_r <= shift_reg_r[1];
+                        BIT7:   serial_data_r <= shift_reg_r[0];
                         default:serial_data_r <= 1'b0;
                 end
                 else begin                         // the low bit send first
@@ -139,6 +140,7 @@ module ShiftRegister(
                         BIT4:   serial_data_r <= shift_reg_r[4];
                         BIT5:   serial_data_r <= shift_reg_r[5];
                         BIT6:   serial_data_r <= shift_reg_r[6];
+                        BIT7:   serial_data_r <= shift_reg_r[7];
                         default:serial_data_r <= 1'b0;
                 end
             end

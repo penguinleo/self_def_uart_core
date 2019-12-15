@@ -99,7 +99,7 @@ module ByteAnalyse(
 			if (!rst) begin
 				data_r	<= 	8'h00;			
 			end
-			else if (State_i == DATABITS && BitWidthCnt_i == DATA_POINT) begin
+			else if ((State_i == DATABITS) && (BitWidthCnt_i == DATA_POINT)) begin
 				if (p_BigEnd_i == BIGEND) begin
 					data_r <= big_end_data_w;    // @DATABITS time the shiftregister low 8 bits is the data bits!
 				end
@@ -119,8 +119,11 @@ module ByteAnalyse(
 			if (!rst) begin
 				n_we_r <= 1'b1;				
 			end
-			else if () begin
-				
+			else if ((p_ParityError_r == RIGHT) && (State_i == STOPBIT) && (BitWidthCnt_i == FIFO_POINT)) begin
+				n_we_r <= 1'b0; // Note the we signal width should not be more than 1 clk! So it is better to design a trigger signal!
+			end
+			else begin
+				n_we_r <= 1'b1;
 			end
 		end
 endmodule

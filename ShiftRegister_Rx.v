@@ -33,8 +33,12 @@
 //          2019-12-04
 //              1   |   Prob4   |   The FIFO write opperation is better to be inserted into the shiftresigter module;
 //          2019-12-14
-//              1   |   Ans4    |   Consider agian the Prob4 should be applied in other module! 
+//              1   |   Ans_4   |   Consider agian the Prob4 should be applied in other module! 
 //                                  The parity result bits was added into the byte_r, after the parity bits
+//          2019-12-17
+//              1   |   Prob5   |   The shift register maybe wrong, the shift register would fresh at each clock, while
+//                                  the judgement would last a long time, many many clocks, it is a serious problem, the 
+//                                  shift register byte_r would change many times during the judgement is available.
 // -----------------------------------------------------------------------------
 module ShiftRegister_Rx(
     // System signal definition

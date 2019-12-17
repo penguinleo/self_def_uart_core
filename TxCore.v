@@ -92,7 +92,7 @@ module TxCore(
         .ParityResult_o(ParityResult_w)
         );
 
-    FIFO_ver1 #(.DEPTH(8'd128)) TxCoreFifo (
+    FIFO_ver1 #(.DEPTH(8'd32)) TxCoreFifo (
         .clk(clk),
         .rst(rst),
         .data_i(data_i),

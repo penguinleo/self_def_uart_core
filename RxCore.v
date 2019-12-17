@@ -50,6 +50,10 @@ module RxCore(
 		wire [3:0]	BitWidthCnt_w;
 		wire 		ParityResult_w;
 		wire [11:0]	Byte_w;
+		wire [7:0]	Data_w;
+		wire 		n_we_w;
+		wire 		p_full_w;
+		
 	FSM_Rx StateMachine(
 		.clk(clk),
 		.rst(rst),
@@ -87,6 +91,31 @@ module RxCore(
         .ParityResult_o(ParityResult_w)
         );
 
+	ByteAnalyse ByteAnalyse(
+		.clk(clk),
+		.rst(rst),
+		.n_we_o(n_we_w),
+		.data_o(Data_w),
+		.p_full_i(p_full_w),
+		.byte_i(Byte_w),
+		.Bit_Synch_i(Bit_Synch_w),
+		.State_i(State_w),
+		.BitWidthCnt_i(BitWidthCnt_w),
+		.p_ParityEnable_i(p_ParityEnable_i),
+		.p_BigEnd_i(p_BigEnd_i),
+		.p_ParityError_o(p_ParityError_o)
+		);
+
+	FIFO_ver1 #(.DEPTH(8'd128)) TxCoreFifo (
+        .clk(clk),
+        .rst(rst),
+        .data_i(Data_w),
+        .n_we_i(n_we_w),
+        .n_re_i(n_rd_i),
+        .data_o(data_o),
+        .p_empty_o(p_empty_o),
+        .p_full_o(p_full_w)
+        );
 	
 
 endmodule

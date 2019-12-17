@@ -47,6 +47,7 @@ module RxCore(
 		wire 		p_ParityCalTrigger_w;
 		wire [4:0]	State_w;
 		wire [3:0]	BitCounter_w;
+		wire [3:0]	BitWidthCnt_w;
 		wire 		ParityResult_w;
 		wire [11:0]	Byte_w;
 	FSM_Rx StateMachine(
@@ -67,7 +68,7 @@ module RxCore(
 		.AcqSig_i(AcqSig_i),
 		.Rx_i(Rx_i),
 		.State_i(State_w),
-		.BitCounter_i(BitCounter_w),
+		.BitWidthCnt_o(BitWidthCnt_w),
 		.ParityResult_i(ParityResult_w),
 		.Byte_o(Byte_w),
 		.Bit_Synch_o(Bit_Synch_w),

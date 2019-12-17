@@ -133,7 +133,7 @@ module ByteAnalyse(
             if (!rst) begin
                 n_we_r <= 1'b1;             
             end
-            else if () begin
+            else if (rising_edge_we_tr_w == 1'b1) begin
                 n_we_r <= 1'b0; // Note the we signal width should not be more than 1 clk! So it is better to design a trigger signal!
             end
             else begin

@@ -49,8 +49,6 @@ module FSM_Rx(
         input           AcqSig_i,
     // signal from the control register
         input           p_ParityEnable_i,
-    // signal trigger the parity calculate
-    	output 			p_ParityCalTrigger_o,
     // output of the FSM RX
         output [4:0]    State_o,            // Rx core state machine output 
         output [3:0]    BitCounter_o        // the bit counter output
@@ -67,7 +65,7 @@ module FSM_Rx(
     // wire definition
         wire [4:0]      state_w; // triple mode result output
         wire [3:0]      bit_counter_w;
-        wire 			p_ParityCalTrigger_w;
+        // wire 			p_ParityCalTrigger_w;
     // parameter definition
         // state machine definition
             parameter INTERVAL  = 5'b0_0001;
@@ -86,8 +84,9 @@ module FSM_Rx(
                                 & (bit_counter_B_r & bit_counter_C_r)
                                 & (bit_counter_C_r & bit_counter_A_r);
         assign State_o          = state_w;
-        assign p_ParityCalTrigger_o = p_ParityCalTrigger_w;
-        assign p_ParityCalTrigger_w = (Bit_Synch_i == 1'b1) && (bit_counter_w == 4'd8);
+        assign BitCounter_o 	= bit_counter_w;
+        // assign p_ParityCalTrigger_o = p_ParityCalTrigger_w;
+        // assign p_ParityCalTrigger_w = (Bit_Synch_i == 1'b1) && (bit_counter_w == 4'd8);
     // data bits counter module
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -95,12 +94,12 @@ module FSM_Rx(
                 bit_counter_B_r <= 4'd0;
                 bit_counter_C_r <= 4'd0;                
             end
-            else if ((state_w == DATABITS) && (Rx_Synch_i != 1'b1)) begin
+            else if ((state_w == DATABITS) && (Bit_Synch_i != 1'b1)) begin
                 bit_counter_A_r <= bit_counter_w;
                 bit_counter_B_r <= bit_counter_w;
                 bit_counter_C_r <= bit_counter_w;
             end
-            else if ((state_w == DATABITS) && (Rx_Synch_i == 1'b1)) begin
+            else if ((state_w == DATABITS) && (Bit_Synch_i == 1'b1)) begin
                 bit_counter_A_r <= bit_counter_A_r + 1'b1;
                 bit_counter_B_r <= bit_counter_B_r + 1'b1;
                 bit_counter_C_r <= bit_counter_C_r + 1'b1;

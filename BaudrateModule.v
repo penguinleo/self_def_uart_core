@@ -36,8 +36,13 @@ module BaudrateModule(
     );
     // Register definition
         // input buffer
-            reg     [15:0]  divider_r;  // divider 
-            reg             bauden_r;
+            reg     [12:0]  acq_period_r;           // divider 
+            reg     [12:0]  compensate_period_r;    // the compensated period
+            reg     [4:0]   pos_acq_num_r;          // the number of normal acquisition period in positive compensation
+            reg     [4:0]   pos_comp_num_r;         // the number of compensated acquisition period in positive compensation
+            reg     [4:0]   neg_acq_num_r;          // the number of normal acquisition period in negative compensation
+            reg     [4:0]   neg_comp_num_r;         // the number of compensated acquisition perion in negative compensation     
+            reg             baud_en_r;
         // opperate register
             reg     [2:0]   div_baud_r; // the divider for the baud sig(1:8, acq sig)
             reg     [15:0]  counter_r;

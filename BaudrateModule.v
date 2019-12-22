@@ -20,12 +20,19 @@
 //      2   :   AcqSig_o, the acquisition signal for the RX port, the frequency is 8 times of BaudSig_o.
 // -----------------------------------------------------------------------------
 module BaudrateModule(
-    input           clk,         //System input clock signal
-    input           rst,         //System reset signal
-    input   [15:0]  Divisor_i,   //The Baudrate divider
-    input           BaudEn_i,    //Baudrate enable signal
-    output          AcqSig_o,    //Rx port acquisite signal
-    output          BaudSig_o    //Tx port singal frequency
+    input               clk,            //System input clock signal
+    input               rst,            //System reset signal
+    // The Acquisition Parameter definition
+        input   [12:0]  AcqPeriod_i,        //The acquisition period base on the system clk
+    // The relationship between Acq and Baudrate
+        input   [7:0]   PosCompensation_i,  //The compensation method, which result in bit width over limit
+        input   [7:0]   NegCompensation_i,  //The compensation method, which result in bit width below limit
+    // The Byte compensation method
+        input   [7:0]   ByteCompensation_i, //The second level compensation method,which would made the byte more precision
+    // The input and output control signal
+        input           BaudEn_i,    //Baudrate enable signal
+        output          AcqSig_o,    //Rx port acquisite signal
+        output          BaudSig_o    //Tx port singal frequency
     );
     // Register definition
         // input buffer

@@ -40,13 +40,13 @@ module BaudrateModule(
             reg     [12:0]  compensate_period_r;    // the compensated period                
             reg             baud_en_r;
         // divider to generate the baudrate signal from the acquisition signal, the baud_divider_r = acq_num_counter_r + comp_num_counter_r
-            reg     [3:0]   baud_divider_r;         // the divider for the baud sig(1~16 divid, acq sig)
+            reg     [3:0]   baud_divider_r;         // the divider for the baud sig(1~16 divid, acq sig), it is the sum of acq_num_counter_r and comp_num_counter_r
             reg     [3:0]   acq_num_counter_r;      // the divider for the baud sig, count the normal acq signal
             reg     [3:0]   comp_num_counter_r;     // the divider for the baud sig, count the compensated acq signal 
             reg     [12:0]  acq_period_counter_r;   // the counter for the acquisition signal divide from the system clock signal
             reg             acqsig_r;               // the register of acquisition signal, which only last 1 clock
             reg             baudsig_r;              // the register of the baudrate signal, which only last 1 clock
-        // bits index in a byte, the secondary level of compensation, we define that the pos_bit_num_r + neg_bit_num_r = 11
+        // bits index in a byte, the secondary level of compensation, we define that the pos_bit_num_r + neg_bit_num_r = 12
             reg     [3:0]   bit_index_r;            // the bits index, used as a state machine.
             reg     [3:0]   pos_bit_num_r;          // the number of positive compensation method bits in a byte left to send
             reg     [3:0]   neg_bit_num_r;          // the number of negative compensation method bits in a byte left to send
@@ -65,6 +65,7 @@ module BaudrateModule(
             wire    [3:0]   PosCompAcqNum_w;        // the positive compensation method compensated acquisition point number in a bit
             wire    [3:0]   NegNormAcqNum_w;        // the negative compensation method normal acquisition point number in a bit
             wire    [3:0]   NegCompAcqNum_w;        // the negative compensation method compensated acquisition point number in a bit
+            wire            InputBitType_w;         // the start bit compensation type.
     // Parameter definition
         // Byte width
             parameter       BYTEWIDTH   = 4'd10;       // the second compensated method define a byte width 
@@ -82,8 +83,8 @@ module BaudrateModule(
             assign AcqSig_o         = acqsig_r;
         // wire 
             assign AcqRising_w      = acq_period_counter_r == acq_period_r;     // the acquisition period counter gain to the limit set by top module
-            assign BaudRising_w     = AcqRising_w & (acq_num_counter_r == 4'd0) & (comp_num_counter_r == 4'd0);
-            assign BitType_w        = pos_bit_num_r > neg_bit_num_r;
+            assign BaudRising_w     = AcqRising_w & (acq_num_counter_r == 4'd0) & (comp_num_counter_r == 4'd0); // normal acquisition period and compensated period all finished
+            assign BitType_w        = pos_bit_num_r > neg_bit_num_r;   // if now the positive bits' number left in the cycle is bigger than the negatives' the next bit should be a positive compensated bit
         // input data
             assign PosBitsNum_w     = ByteCompensation_i[7:4];
             assign NegBitsNum_w     = ByteCompensation_i[3:0];
@@ -91,6 +92,7 @@ module BaudrateModule(
             assign PosCompAcqNum_w  = PosCompensation_i[3:0];
             assign NegNormAcqNum_w  = NegCompensation_i[7:4];
             assign NegCompAcqNum_w  = NegCompensation_i[3:0];
+            assign InputBitType_w   = PosBitsNum_w > NegBitsNum_w; // if now the positive bits' number left in the cycle is bigger than the negatives' the start bit should be a positive compensated bit
     // Bit index in byte. Used as a compensation state machine
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -115,13 +117,40 @@ module BaudrateModule(
                 neg_bit_num_r <= 4'd0;                
             end
             else if (BaudRising_w == 1'b1) begin
-                if (bit_index_r == BYTEWIDTH) begin
-                    
+                if ((pos_bit_num_r == 4'd0) && (neg_bit_num_r == 4'd0)) begin  // that means a cycle(12bits Cycle) is over, new Start
+                    if (InputBitType_w == POSITIVE) begin   // the first bit in the Cycle is positive or negative using different compensation method
+                        pos_bit_num_r <= PosBitsNum_w - 1'b1;
+                        neg_bit_num_r <= NegBitsNum_w;
+                    end
+                    else begin  // if the first bit should be negative
+                        pos_bit_num_r <= PosBitsNum_w;
+                        neg_bit_num_r <= NegBitsNum_w - 1'b1;
+                    end
+                end
+                else begin
+                    if (BitType_w == POSITIVE) begin   // the next bit in the Cycle is positive or negative using different compensation method
+                        pos_bit_num_r <= PosBitsNum_w - 1'b1;
+                        neg_bit_num_r <= NegBitsNum_w;
+                    end
+                    else begin  // if the first bit should be negative
+                        pos_bit_num_r <= PosBitsNum_w;
+                        neg_bit_num_r <= NegBitsNum_w - 1'b1;
+                    end
                 end
             end
             else begin
-                pos_bit_num_r <= 4'd0;
-                neg_bit_num_r <= 4'd0;
+                pos_bit_num_r <= pos_bit_num_r;
+                neg_bit_num_r <= neg_bit_num_r;
+            end
+        end
+    // Bit divid register fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                acq_num_counter_r   <= 4'd15;
+                comp_num_counter_r  <= 4'd15;
+            end
+            else if () begin
+                
             end
         end
 endmodule

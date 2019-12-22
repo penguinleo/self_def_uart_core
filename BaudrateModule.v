@@ -37,80 +37,91 @@ module BaudrateModule(
     // Register definition
         // input buffer
             reg     [12:0]  acq_period_r;           // divider 
-            reg     [12:0]  compensate_period_r;    // the compensated period
-            reg     [4:0]   pos_acq_num_r;          // the number of normal acquisition period in positive compensation
-            reg     [4:0]   pos_comp_num_r;         // the number of compensated acquisition period in positive compensation
-            reg     [4:0]   neg_acq_num_r;          // the number of normal acquisition period in negative compensation
-            reg     [4:0]   neg_comp_num_r;         // the number of compensated acquisition perion in negative compensation     
+            reg     [12:0]  compensate_period_r;    // the compensated period                
             reg             baud_en_r;
-        // opperate register
-            reg     [2:0]   div_baud_r; // the divider for the baud sig(1:8, acq sig)
-            reg     [15:0]  counter_r;
-            reg             acqsig_r;
-            reg             baudsig_r;
+        // divider to generate the baudrate signal from the acquisition signal, the baud_divider_r = acq_num_counter_r + comp_num_counter_r
+            reg     [3:0]   baud_divider_r;         // the divider for the baud sig(1~16 divid, acq sig)
+            reg     [3:0]   acq_num_counter_r;      // the divider for the baud sig, count the normal acq signal
+            reg     [3:0]   comp_num_counter_r;     // the divider for the baud sig, count the compensated acq signal 
+            reg     [12:0]  acq_period_counter_r;   // the counter for the acquisition signal divide from the system clock signal
+            reg             acqsig_r;               // the register of acquisition signal, which only last 1 clock
+            reg             baudsig_r;              // the register of the baudrate signal, which only last 1 clock
+        // bits index in a byte, the secondary level of compensation, we define that the pos_bit_num_r + neg_bit_num_r = 11
+            reg     [3:0]   bit_index_r;            // the bits index, used as a state machine.
+            reg     [3:0]   pos_bit_num_r;          // the number of positive compensation method bits in a byte left to send
+            reg     [3:0]   neg_bit_num_r;          // the number of negative compensation method bits in a byte left to send
+        // bit type 
+            reg             bit_type_r;             // the bit type in byte, positive compensated bit or negative compensated bit
     // Wire definition
-        wire            AcqRising_w; 
-        wire            BaudRising_w;
-        wire            CounterZero_w;
+        // Acquisition signal and Baudrate signal trigger
+            wire            AcqRising_w; 
+            wire            BaudRising_w;
+        // The bit type choosing a properial compensation method according to the left bit number in the byte 
+            wire            BitType_w;
+        // The input data
+            wire    [3:0]   PosBitsNum_w;           // the number of bits using positive compensation method in the byte
+            wire    [3:0]   NegBitsNum_w;           // the number of bits using negative compensation method in the byte
+            wire    [3:0]   PosNormAcqNum_w;        // the positive compensation method normal acquisition point number in a bit
+            wire    [3:0]   PosCompAcqNum_w;        // the positive compensation method compensated acquisition point number in a bit
+            wire    [3:0]   NegNormAcqNum_w;        // the negative compensation method normal acquisition point number in a bit
+            wire    [3:0]   NegCompAcqNum_w;        // the negative compensation method compensated acquisition point number in a bit
     // Parameter definition
+        // Byte width
+            parameter       BYTEWIDTH   = 4'd10;       // the second compensated method define a byte width 
+        // Bit Type Definition
+            parameter       POSITIVE    = 1'b1;        // the compensated method made the bit a little over time than required bit time(baudrate)
+            parameter       NEGATIVE    = 1'b0;        // the compensated method made the bit a little shorter than required bit time(baudrate)
         // Enable Definition
-            parameter       BAUD_ON = 1'b1;
-            parameter       BAUD_OFF= 1'b0;
+            parameter       BAUD_ON     = 1'b1;
+            parameter       BAUD_OFF    = 1'b0;
         // The divider between the baudrate sig and the acquisition sig
-            parameter       BAUD_DIV = 3'b111;
+            parameter       BAUD_DIV    = 3'b111;
     // Assign
-        assign AcqRising_w      = (counter_r == divider_r);
-        assign BaudRising_w     = div_baud_r[2] & div_baud_r[1] & div_baud_r[0];
-        assign BaudSig_o        = baudsig_r;
-        assign AcqSig_o         = acqsig_r;
-        assign CounterZero_w    = (counter_r == 16'd0);
-    // Module definition
-        // enable register buffer
-            always @(posedge clk or negedge rst) begin
-                if (!rst) begin
-                    bauden_r <= BAUD_OFF;                    
+        // output assign
+            assign BaudSig_o        = baudsig_r;
+            assign AcqSig_o         = acqsig_r;
+        // wire 
+            assign AcqRising_w      = acq_period_counter_r == acq_period_r;     // the acquisition period counter gain to the limit set by top module
+            assign BaudRising_w     = AcqRising_w & (acq_num_counter_r == 4'd0) & (comp_num_counter_r == 4'd0);
+            assign BitType_w        = pos_bit_num_r > neg_bit_num_r;
+        // input data
+            assign PosBitsNum_w     = ByteCompensation_i[7:4];
+            assign NegBitsNum_w     = ByteCompensation_i[3:0];
+            assign PosNormAcqNum_w  = PosCompensation_i[7:4];
+            assign PosCompAcqNum_w  = PosCompensation_i[3:0];
+            assign NegNormAcqNum_w  = NegCompensation_i[7:4];
+            assign NegCompAcqNum_w  = NegCompensation_i[3:0];
+    // Bit index in byte. Used as a compensation state machine
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                bit_index_r <= 4'd0;                
+            end
+            else if (BaudRising_w == 1'b1) begin
+                if (bit_index_r == BYTEWIDTH) begin
+                    bit_index_r <= 4'd0;
                 end
                 else begin
-                    bauden_r <= BaudEn_i;
+                    bit_index_r <= bit_index_r + 1'b1;
                 end
             end
-        // module input buffer
-            always @(posedge clk or negedge rst) begin
-                if (!rst) begin
-                    divider_r <= 16'd0;         // reset the baudrate is zero
-                end
-                else if (CounterZero_w) begin
-                    divider_r <= Divisor_i;
+            else begin
+                bit_index_r <= bit_index_r;
+            end
+        end
+    // Positive bit number and Negative bit number fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                pos_bit_num_r <= 4'd0;
+                neg_bit_num_r <= 4'd0;                
+            end
+            else if (BaudRising_w == 1'b1) begin
+                if (bit_index_r == BYTEWIDTH) begin
+                    
                 end
             end
-        // counter gain & acquisition sig generator
-            always @(posedge clk or negedge rst) begin
-                    if (!rst || (bauden_r == BAUD_ON)) begin
-                        counter_r   <= 16'd0;
-                        acqsig_r    <= 1'b0;                                
-                    end
-                    else if (AcqRising_w) begin
-                        counter_r   <= 16'd0;
-                        acqsig_r    <= 1'b1; 
-                    end
-                    else begin
-                        counter_r   <= counter_r + 1'b1;
-                        acqsig_r    <= 1'b0; 
-                    end
-                end   
-        // baud div register gain and baud sig generate
-            always @(posedge clk or negedge rst) begin
-                       if (!rst || (bauden_r == BAUD_ON)) begin
-                           div_baud_r   <= 3'b000;
-                           baudsig_r    <= 1'b0;
-                       end
-                       else if (BaudRising_w) begin
-                           div_baud_r   <= 3'b000;
-                           baudsig_r    <= 1'b1;
-                       end
-                       else begin
-                           div_baud_r   <= div_baud_r + acqsig_r;
-                           baudsig_r    <= 1'b0;
-                       end
-                   end     
+            else begin
+                pos_bit_num_r <= 4'd0;
+                neg_bit_num_r <= 4'd0;
+            end
+        end
 endmodule

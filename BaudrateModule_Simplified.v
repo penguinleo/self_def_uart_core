@@ -36,7 +36,6 @@ module BaudrateModule(
     // The Byte compensation method
         // input   [7:0]   ByteCompensation_i, //The second level compensation method,which would made the byte more precision, this function is reserved
     // The input and output control signal
-        input           BaudEn_i,    //Baudrate enable signal
         output          AcqSig_o,    //Rx port acquisite signal
         output          BaudSig_o    //Tx port singal frequency
     );
@@ -46,51 +45,72 @@ module BaudrateModule(
             reg     [11:0]  acq_period_up_r;                // the data is equal with AcqPeriod_i + 1
             reg     [3:0]   acq_up_time_limit_r;            // the period round up times, it is the PosCompensation_i[7:4]
             reg     [3:0]   acq_down_time_limit_r;          // the period round down times,it is the PosCompensation_i[3:0]
-            reg             baud_en_r;
         // divider to generate the baudrate signal from the acquisition signal, the baud_divider_r = acq_num_counter_r + comp_num_counter_r
             reg     [11:0]  acq_period_limit_r;             // it is choosen from the acq_period_down_r and acq_period_up_r
             reg     [11:0]  acq_period_counter_r;           // the counter for the period 
-            reg     [3:0]   acq_time_down_cnt_r;            // the divider for the baud sig, count the normal acq signal
-            reg     [3:0]   acq_time_up_cnt_r;              // the divider for the baud sig, count the compensated acq signal   
+            reg     [3:0]   acq_down_time_cnt_r;            // the divider for the baud sig, count the normal acq signal, Note this counter count down from the limit to zero 
+            reg     [3:0]   acq_up_time_cnt_r;              // the divider for the baud sig, count the compensated acq signal,Note this counter count down from the limit to zero    
             reg             acqsig_r;                       // the register of acquisition signal, which only last 1 clock
             reg             baudsig_r;                      // the register of the baudrate signal, which only last 1 clock
         // Acquisition signal and Baudrate signal trigger
-            wire            AcqRising_w;                    // the acq_period_counter_r reach the limit
-            wire            BaudRising_w;                   // when round up time and round down time reach the limit 
-            wire            AcqTimeUpSelected_w;            // the acq_period_counter_r should gain to equal with the acq_period_up_r,
+    // Wire logic definition
+        // state logic 
+            wire        Time2Reload_w;                  // the state machine trigger condition
+        // the comparation of the acq_up_time_cnt_r and acq_down_time_cnt_r for the compensate algorithm
+            wire        AcqUpNumberReachLimit_w;            // the acq_up_time_cnt_r has decreased to zero
+            wire        AcqDownNumberReachLimit_w;          // the acq_down_time_cnt_r has decreased to zero 
+            wire        AcqUpNumberLeftMore_w;              // determin the acquisition period width after first period
+            wire        AcqUpNumberInitMore_w;              // determin the first acquisition period width
+        // Some State trigger signal    
+            wire        AcqRising_w;                    // the acq_period_counter_r reach the limit
+            wire        BaudRising_w;                   // when round up time and round down time reach the limit 
+            wire        AcqTimeUpSelected_w;            // the acq_period_counter_r should gain to equal with the acq_period_up_r
+        // the 
     // Parameter definition
+        // Default parameter
+            parameter       DEFAULT_PERIOD      = 12'd215;
+            parameter       DEFAULT_UP_TIME     = 4'd7;
+            parameter       DEFAULT_DOWN_TIME   = 4'd7;
         // Byte width
             parameter       BYTEWIDTH   = 4'd10;       // the second compensated method define a byte width 
         // Bit Type Definition
             parameter       POSITIVE    = 1'b1;        // the compensated method made the bit a little over time than required bit time(baudrate)
             parameter       NEGATIVE    = 1'b0;        // the compensated method made the bit a little shorter than required bit time(baudrate)
-        // Enable Definition
-            parameter       BAUD_ON     = 1'b1;
-            parameter       BAUD_OFF    = 1'b0;
-        // The divider between the baudrate sig and the acquisition sig
-            parameter       BAUD_DIV    = 3'b111;
+        // The Round Up period and Round Down period
+            parameter       UP_PERIOD   = 1'b1;
+            parameter       DOWN_PERIOD = 1'b0;
+        // The output signal level definition
+            parameter       INVALID     = 1'b0;
+            parameter       ACTIVE      = 1'b1;
     // Assign
-            assign AcqRising_w  = (acq_period_counter_r == acq_period_limit_r);
-            assign BaudRising_w = AcqRising_w & (acq_time_up_cnt_r == acq_up_time_limit_r) & (acq_time_down_cnt_r == acq_down_time_limit_r);
-
-    // the module enable signal
-        always @(posedge clk or negedge rst) begin
-            if (!rst) begin
-                baud_en_r   <= BAUD_OFF;                
-            end
-            else begin
-                baud_en_r   <= BaudEn_i;
-            end
-        end
+        // State machine 
+            assign BitCompState_w   =   (bit_comp_state_r1 & bit_comp_state_r2)
+                                    |   (bit_comp_state_r2 & bit_comp_state_r3)
+                                    |   (bit_comp_state_r3 & bit_comp_state_r1);
+            assign Time2Reload_w    =   (acq_up_time_cnt_r == 4'd0);
+        // the comparation of the acq_up_time_cnt_r and acq_down_time_cnt_r
+            assign AcqUpNumberReachLimit_w    = (acq_up_time_cnt_r == 4'd0);      // the register decrease to zero 
+            assign AcqDownNumberReachLimit_w  = (acq_down_time_cnt_r == 4'd0);    // the register decrease to zero 
+            assign AcqUpNumberLeftMore_w      = (acq_up_time_cnt_r > acq_down_time_cnt_r);
+            assign AcqUpNumberInitMore_w      = (acq_up_time_limit_r > acq_down_time_limit_r);
+        // the judge result combination of the comparation result     
+            assign AcqRising_w          = (acq_period_counter_r == 12'd0);
+            assign BaudRising_w         = AcqRising_w & (acq_up_time_cnt_r == 4'd0) & (acq_down_time_cnt_r == 4'd0);
+            assign AcqTimeUpSelected_w  = (AcqUpNumberReachLimit_w & AcqDownNumberReachLimit_w & AcqUpNumberInitMore_w) 
+                                        | (~AcqUpNumberReachLimit_w& AcqDownNumberReachLimit_w ) 
+                                        | (~AcqUpNumberReachLimit_w&~AcqDownNumberReachLimit_w & AcqUpNumberLeftMore_w);
+        // output signal assign
+            assign AcqSig_o     = acqsig_r;
+            assign BaudSig_o    = baudsig_r;
     // input data buffer opperation all register only available when the baud_en_r is disabled
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                acq_period_down_r           <= 1'b1;
-                acq_period_up_r             <= 1'b1;
-                acq_up_time_limit_r         <= 1'b1;
-                acq_down_time_limit_r       <= 1'b1;
+                acq_period_down_r           <= DEFAULT_PERIOD;
+                acq_period_up_r             <= DEFAULT_PERIOD + 1'b1;
+                acq_up_time_limit_r         <= DEFAULT_UP_TIME;
+                acq_down_time_limit_r       <= DEFAULT_DOWN_TIME;
             end
-            else if (baud_en_r == BAUD_OFF) begin  // only when the baudrate module is off
+            else if (BaudRising_w == 1'b1) begin  // only when the baudrate module is off
                 acq_period_down_r           <= AcqPeriod_i;
                 acq_period_up_r             <= AcqPeriod_i + 1'b1;
                 acq_up_time_limit_r         <= BitCompensation_i[7:4];
@@ -106,11 +126,64 @@ module BaudrateModule(
     // the acquisition period coutner
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                acq_period_counter_r <=                      
+                acq_period_counter_r <= DEFAULT_PERIOD;
             end
-            else if () begin
-                
+            else if ((Time2Reload_w == 1'b1)) begin
+                if (AcqTimeUpSelected_w == UP_PERIOD) begin
+                    acq_period_counter_r <= acq_period_up_r;
+                end
+                else begin
+                    acq_period_counter_r <= acq_period_down_r;
+                end
+            end
+            else begin
+                acq_period_counter_r <= acq_period_counter_r - 1'b1;
             end
         end 
+    // the acq_up_time_cnt_r and acq_down_time_cnt_r fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                acq_up_time_cnt_r   <= DEFAULT_UP_TIME;
+                acq_down_time_cnt_r <= DEFAULT_DOWN_TIME;
+            end
+            else if ((Time2Reload_w == 1'b1)) begin
+                if (AcqTimeUpSelected_w == UP_PERIOD) begin
+                    acq_up_time_cnt_r   <= acq_up_time_cnt_r - 1'b1;
+                    acq_down_time_cnt_r <= acq_down_time_cnt_r;
+                end
+                else begin
+                    acq_up_time_cnt_r   <= acq_up_time_cnt_r;
+                    acq_down_time_cnt_r <= acq_down_time_cnt_r - 1'b1;
+                end
+            end
+            else begin
+                acq_up_time_cnt_r   <= acq_up_time_cnt_r;                   
+                acq_down_time_cnt_r <= acq_down_time_cnt_r;                 
+            end
+        end
+    // output register fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                acqsig_r <= INVALID;              
+            end
+            else if (AcqRising_w == 1'b1) begin
+                acqsig_r <= ACTIVE;
+            end
+            else begin
+                acqsig_r <= INVALID;
+            end
+        end
+    // baudrate signal generate
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                baudsig_r <= INVALID;                
+            end
+            else if (BaudRising_w == 1'b1) begin
+                baudsig_r <= ACTIVE;
+            end
+            else begin
+                baudsig_r <= INVALID;
+            end
+        end
 endmodule
 

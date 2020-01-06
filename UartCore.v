@@ -6,7 +6,12 @@
 // Create : 2019-12-17 15:17:15
 // Revise : 2019-12-17 15:17:15
 // Editor : sublime text3, tab size (4)
-// Comment: this module is designed as the top module of the UART module
+// Comment: this module is designed as the top module of the UART module. The module 
+//          is built up by its submodules.
+//          To realize the high precision of the bit width(baudrate), the bit compensation
+//          method was introduced into the uart port. The accuracy of the bit width which 
+//          send out by the module could be reduced under 1 system clock!
+//          By the way, the uart core should work with the 40MHz system clock.
 //          Up module:
 //              ----
 //          Sub module:
@@ -16,10 +21,28 @@
 // Input Signal List:
 //      1   |   clk         :   clock signal
 //      2   |   rst         :   reset signal
-//      3   |   
+//      3   |   p_We_i      :   The control signal that the control parameters should enabled
+//      4   |   CtrlReg1_i  :   The control register for the uart core. In this byte there are
+//                              Bit7: the BigEnd or SmallEnd control bit, 1-Big End; 0-Small End.
+//                              Bit6: the Parity Enable control bit, 1-Enable the parity function; 0-Disabled.
+//                              Bit5: the Parity Method control bit, 0-EVEN parity; 1-ODD parity
+//                              Bit4: Reserved
+//                              Bit3~0: The high 4 bits for the acquisition signal cycle congtrol
+//      5   |   CtrlReg2_i  :   The low 8 bits for the acquisition signal cycle control 
+//      6   |   CtrlReg3_i  :   The compensation method for the baudrate signal.
+//                              Bit7~4: The round up acquisition signal cycle numbers.
+//                              Bit3:0: The round down acquisition signal cycle number.
+//      7   |   n_rd_i      :   The read signal of the reveice fifo, which is better to be triggled 
+//                              by the read access from the bus.
+//      8   |   data_i      :   The write port of the transimit fifo.
+//      9   |   n_we_i      :   The write signal of the transimit fifo, which is better to be triggled 
+//                              by the write access from the bus.
+//      10  |   Rx_i        :   The rx signal from the FPGA pin.
 // Output Signal List:
-//      1   |     
-//  
+//      1   |   data_o      :   The receive fifo output.
+//      2   |   p_empty_o   :   The receive fifo empty flag, 1-empty, 0-something in the fifo to be read
+//      3   |   p_full_o    :   The transimite fifo is full, 1-full, 0-not full.      
+//      4   |   Tx_o        :   The tx output signal through the FPGA pin.
 // Note:  
 // 
 // -----------------------------------------------------------------------------   
@@ -28,7 +51,7 @@ module UartCore(
     input   rst,
     // write enable & control register
         input           p_We_i,
-        input [7:0]     CtrlReg1_i,
+        input [7:0]     CtrlReg1_i,  
         input [7:0]     CtrlReg2_i,
         input [7:0]     CtrlReg3_i,
     // rx fifo control signal

@@ -40,7 +40,7 @@ module ParityGenerator(
     // input [3:0]     BitCounter_i,
     // input           ParityEnable_i, 
     input           ParityMethod_i, 
-    input [7:0]     Data_i， 
+    input [7:0]     Data_i, 
     output          ParityResult_o
     );
     // register definition 

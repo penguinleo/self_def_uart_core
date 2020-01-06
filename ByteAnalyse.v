@@ -113,7 +113,7 @@ module ByteAnalyse(
                 end
             end
             else if ((State_i == STARTBIT) || (State_i == IDLE)) begin
-                data_r <= 8'h00
+                data_r <= 8'h00;
             end
             else begin
                 data_r <= data_r;

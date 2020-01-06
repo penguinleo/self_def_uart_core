@@ -130,6 +130,7 @@ module ShiftRegister(
                         BIT6:   serial_data_r <= shift_reg_r[1];
                         BIT7:   serial_data_r <= shift_reg_r[0];
                         default:serial_data_r <= 1'b0;
+                    endcase
                 end
                 else begin                         // the low bit send first
                     case(BitCounter_i)
@@ -142,6 +143,7 @@ module ShiftRegister(
                         BIT6:   serial_data_r <= shift_reg_r[6];
                         BIT7:   serial_data_r <= shift_reg_r[7];
                         default:serial_data_r <= 1'b0;
+                    endcase
                 end
             end
             else if (State_i == PARITYBIT) begin

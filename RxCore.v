@@ -34,8 +34,8 @@ module RxCore(
         input           p_BigEnd_i,
         input           ParityMethod_i,
     // the error flag signal
-    	output 			p_BaudrateError_o,	// the Baudrate error
-    	output 			p_ParityError_o,	// the Parity error
+    	// output 			p_BaudrateError_o,	// the Baudrate error
+    	// output 			p_ParityError_o,	// the Parity error
     // the rx signal
     	input 			Rx_i 			
 	);
@@ -84,7 +84,7 @@ module RxCore(
         .rst(rst),
         // .p_BaudSig_i(p_BaudSig_i),
         .State_i(State_w),
-        .p_ParityCalTrigger_i(p_ParityCalTrigger_w)
+        .p_ParityCalTrigger_i(p_ParityCalTrigger_w),
         // .BitCounter_i(BitCounter_w),
         .ParityMethod_i(ParityMethod_i),
         .Data_i(Byte_w[7:0]),          // Be Carefull, when trigger signal generate the byte data is low 8 bits

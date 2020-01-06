@@ -25,7 +25,7 @@
 // Note:  
 // 
 // -----------------------------------------------------------------------------   
-module BaudrateModule(
+module BaudrateModule_Simplified(
     input               clk,            //System input clock signal
     input               rst,            //System reset signal
     // The Acquisition Parameter definition
@@ -62,15 +62,18 @@ module BaudrateModule(
             wire        AcqUpNumberLeftMore_w;              // determin the acquisition period width after first period
             wire        AcqUpNumberInitMore_w;              // determin the first acquisition period width
         // Some State trigger signal    
-            wire        AcqRising_w;                    // the acq_period_counter_r reach the limit
-            wire        BaudRising_w;                   // when round up time and round down time reach the limit 
-            wire        AcqTimeUpSelected_w;            // the acq_period_counter_r should gain to equal with the acq_period_up_r
+            wire        AcqRising_w;                        // the acq_period_counter_r reach the limit
+            wire        BaudRising_w;                       // when round up time and round down time reach the limit 
+            wire        AcqTimeUpSelected_w;                // the acq_period_counter_r should gain to equal with the acq_period_up_r
+            wire        AcqNumberReload_w;                  // the acq_up_time_cnt_r and acq_down_time_cnt_r should return to their limit
+        // Testwire
+            wire [4:0]  Divivder_Cnt_w;
         // the 
     // Parameter definition
         // Default parameter
-            parameter       DEFAULT_PERIOD      = 12'd215;
-            parameter       DEFAULT_UP_TIME     = 4'd7;
-            parameter       DEFAULT_DOWN_TIME   = 4'd7;
+            parameter       DEFAULT_PERIOD      = 12'd20;
+            parameter       DEFAULT_UP_TIME     = 4'd10;
+            parameter       DEFAULT_DOWN_TIME   = 4'd5;
         // Byte width
             parameter       BYTEWIDTH   = 4'd10;       // the second compensated method define a byte width 
         // Bit Type Definition
@@ -84,10 +87,7 @@ module BaudrateModule(
             parameter       ACTIVE      = 1'b1;
     // Assign
         // State machine 
-            assign BitCompState_w   =   (bit_comp_state_r1 & bit_comp_state_r2)
-                                    |   (bit_comp_state_r2 & bit_comp_state_r3)
-                                    |   (bit_comp_state_r3 & bit_comp_state_r1);
-            assign Time2Reload_w    =   (acq_up_time_cnt_r == 4'd0);
+            assign Time2Reload_w    =   (acq_period_counter_r == 12'd0);
         // the comparation of the acq_up_time_cnt_r and acq_down_time_cnt_r
             assign AcqUpNumberReachLimit_w    = (acq_up_time_cnt_r == 4'd0);      // the register decrease to zero 
             assign AcqDownNumberReachLimit_w  = (acq_down_time_cnt_r == 4'd0);    // the register decrease to zero 
@@ -99,9 +99,12 @@ module BaudrateModule(
             assign AcqTimeUpSelected_w  = (AcqUpNumberReachLimit_w & AcqDownNumberReachLimit_w & AcqUpNumberInitMore_w) 
                                         | (~AcqUpNumberReachLimit_w& AcqDownNumberReachLimit_w ) 
                                         | (~AcqUpNumberReachLimit_w&~AcqDownNumberReachLimit_w & AcqUpNumberLeftMore_w);
+            assign AcqNumberReload_w    = AcqUpNumberReachLimit_w & AcqDownNumberReachLimit_w;
         // output signal assign
             assign AcqSig_o     = acqsig_r;
             assign BaudSig_o    = baudsig_r;
+        // Test 
+            assign Divivder_Cnt_w = acq_up_time_cnt_r + acq_down_time_cnt_r;
     // input data buffer opperation all register only available when the baud_en_r is disabled
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -146,8 +149,12 @@ module BaudrateModule(
                 acq_up_time_cnt_r   <= DEFAULT_UP_TIME;
                 acq_down_time_cnt_r <= DEFAULT_DOWN_TIME;
             end
-            else if ((Time2Reload_w == 1'b1)) begin
-                if (AcqTimeUpSelected_w == UP_PERIOD) begin
+            else if (Time2Reload_w == 1'b1) begin
+                if (AcqNumberReload_w == 1'b1) begin
+                    acq_up_time_cnt_r   <= acq_up_time_limit_r;
+                    acq_down_time_cnt_r <= acq_down_time_limit_r;
+                end 
+                else if (AcqTimeUpSelected_w == UP_PERIOD) begin
                     acq_up_time_cnt_r   <= acq_up_time_cnt_r - 1'b1;
                     acq_down_time_cnt_r <= acq_down_time_cnt_r;
                 end

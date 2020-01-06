@@ -23,7 +23,7 @@
 // -----------------------------------------------------------------------------
 module  FIFO_ver1
 #(
-    parameter DEPTH = 8'd128,
+    parameter DEPTH = 8'd128
     )
 (
     input           clk,

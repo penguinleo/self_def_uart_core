@@ -51,6 +51,9 @@ module  FIFO_ver1
     // assign
         assign p_empty_w    = (pointer_wr_r == pointer_rd_r);
         assign p_full_w     = (next_pointer_wr_r == pointer_rd_r);
+        assign p_empty_o    = p_empty_w;
+        assign p_full_o     = p_full_w;
+        assign data_o       = output_data_r;
     // the write pointer fresh
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -83,7 +86,7 @@ module  FIFO_ver1
     // the read pointer fresh
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                pointer_rd_r <= 8'd1;                
+                pointer_rd_r <= 8'd0;                
             end
             else if ((n_re_i == 1'b0) && (p_empty_w == 1'b0)) begin
                 if (pointer_rd_r >= DEPTH-1) begin

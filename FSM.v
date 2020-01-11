@@ -147,15 +147,15 @@ module FSM(
                             state_B_r <= STOPBIT;
                             state_C_r <= STOPBIT;
                         end
-                        else if (bit_counter_w < BITNUMBER) begin
-                            state_A_r <= DATABITS;
-                            state_B_r <= DATABITS;
-                            state_C_r <= DATABITS;
-                        end
+                        // else if ((bit_counter_w < BITNUMBER) & (p_BaudSig_i == 1'b1)) begin
+                        //     state_A_r <= DATABITS;
+                        //     state_B_r <= DATABITS;
+                        //     state_C_r <= DATABITS;
+                        // end
                         else begin
-                            state_A_r <= INTERVAL;                            
-                            state_B_r <= INTERVAL;
-                            state_C_r <= INTERVAL;   
+                            state_A_r <= DATABITS;                            
+                            state_B_r <= DATABITS;
+                            state_C_r <= DATABITS;   
                         end
                     end
                     PARITYBIT:  begin

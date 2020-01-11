@@ -61,7 +61,7 @@ module RxCore(
 		.Bit_Synch_i(Bit_Synch_w),
 		.AcqSig_i(AcqSig_i),
 		.p_ParityEnable_i(p_ParityEnable_i),
-		.p_ParityCalTrigger_o(p_ParityCalTrigger_w),
+		// .p_ParityCalTrigger_o(p_ParityCalTrigger_w),
 		.State_o(State_w),
 		.BitCounter_o(BitCounter_w)
 		);
@@ -76,7 +76,8 @@ module RxCore(
 		.ParityResult_i(ParityResult_w),
 		.Byte_o(Byte_w),
 		.Bit_Synch_o(Bit_Synch_w),
-		.Rx_Synch_o(Rx_Synch_w)
+		.Rx_Synch_o(Rx_Synch_w),
+		.p_ParityCalTrigger_o(p_ParityCalTrigger_w)
 		);
 
 	ParityGenerator ParityGenerator(
@@ -106,7 +107,7 @@ module RxCore(
 		.p_ParityError_o(p_ParityError_o)
 		);
 
-	FIFO_ver1 #(.DEPTH(8'd128)) TxCoreFifo (
+	FIFO_ver1 #(.DEPTH(8'd128)) RxCoreFifo (
         .clk(clk),
         .rst(rst),
         .data_i(Data_w),

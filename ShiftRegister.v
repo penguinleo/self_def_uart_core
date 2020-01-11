@@ -48,7 +48,7 @@ module ShiftRegister(
     );
     // register definition
         // Fifo interface register
-            reg     n_fifo_rd_r;
+            reg [1:0]   n_fifo_rd_r;
         // inner module interface register
             reg [7:0]   shift_reg_r;
             reg         serial_data_r;
@@ -79,7 +79,7 @@ module ShiftRegister(
             parameter BIT7      = 4'd7;
     // assignment
         // output assign
-            assign n_FifoRe_o   = n_fifo_rd_r;
+            assign n_FifoRe_o   = n_fifo_rd_r[0];
             assign ShiftData_o  = shift_reg_r;
             assign SerialData_o = serial_data_r;
         // the fifo re rising time
@@ -89,13 +89,13 @@ module ShiftRegister(
     // rd signal generate module
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                n_fifo_rd_r <= 1'd1;                
+                n_fifo_rd_r <= 2'b11;                
             end
             else if (fifo_re_rising_w == 1'b1) begin
-                n_fifo_rd_r <= 1'd0;
+                n_fifo_rd_r <= {n_fifo_rd_r[0],1'b0};
             end
             else begin
-                n_fifo_rd_r <= 1'd1;
+                n_fifo_rd_r <= {n_fifo_rd_r[0],1'b1};
             end
         end
     // shift register fresh module
@@ -103,7 +103,7 @@ module ShiftRegister(
             if (!rst) begin
                 shift_reg_r <= 7'd0;                
             end
-            else if (n_fifo_rd_r == 1'd0) begin
+            else if (n_fifo_rd_r[1] == 1'd0) begin
                 shift_reg_r <= FifoData_i;
             end
             else begin

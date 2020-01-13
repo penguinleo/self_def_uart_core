@@ -71,6 +71,7 @@ module ShiftRegister_Rx(
         input           AcqSig_i,
     // the interface of the RX core
         input           Rx_i,
+        input   [3:0]   AcqNumPerBit_i,
     // the interface with the FSM_Rx module
         input   [4:0]   State_i,
         output  [3:0]   BitWidthCnt_o,   // the index of the bit in the byte
@@ -114,7 +115,7 @@ module ShiftRegister_Rx(
         assign acqsig_dly_2clk_w    = shift_acq_r[1];
         assign acqsig_dly_3clk_w    = shift_acq_r[2];
         assign Rx_Synch_o           = falling_edge_rx_w & (State_i == IDLE);
-        assign Bit_Synch_o          = ~(bit_width_cnt_r != ) & (State_i != IDLE);
+        assign Bit_Synch_o          = ~(bit_width_cnt_r != AcqNumPerBit_i) & (State_i != IDLE);
         assign Byte_o               = byte_r;
         assign BitWidthCnt_o        = bit_width_cnt_r;
         assign p_ParityCalTrigger_o = (State_i == DATABITS) & (bit_width_cnt_r == ACQSITION_POINT) & (acqsig_dly_2clk_w == 1'b1); // this design each data bit freshing the parity result

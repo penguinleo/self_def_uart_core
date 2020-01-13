@@ -33,6 +33,7 @@ module RxCore(
 		input           p_ParityEnable_i,
         input           p_BigEnd_i,
         input           ParityMethod_i,
+        input [3:0]		AcqNumPerBit_i,
     // the error flag signal
     	// output 			p_BaudrateError_o,	// the Baudrate error
     	// output 			p_ParityError_o,	// the Parity error
@@ -70,6 +71,7 @@ module RxCore(
 		.clk(clk),
 		.rst(rst),
 		.AcqSig_i(AcqSig_i),
+		.AcqNumPerBit_i(AcqNumPerBit_i),
 		.Rx_i(Rx_i),
 		.State_i(State_w),
 		.BitWidthCnt_o(BitWidthCnt_w),

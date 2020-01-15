@@ -21,68 +21,68 @@
 //              
 // -----------------------------------------------------------------------------
 module RxCore(
-	input 	clk,
-	input 	rst,
-	// fifo control signal
-		output [7:0]	data_o,
-		input 			n_rd_i,   	// the fifo read signal
-		output 			p_empty_o,	// the fifo is empty
-	// the baudsig from the baudrate generate module
-		input 			AcqSig_i,   // acquistion signal
-	// the rx core control signal
-		input           p_ParityEnable_i,
+    input   clk,
+    input   rst,
+    // fifo control signal
+        output [7:0]    data_o,
+        input           n_rd_i,     // the fifo read signal
+        output          p_empty_o,  // the fifo is empty
+    // the baudsig from the baudrate generate module
+        input           AcqSig_i,   // acquistion signal
+    // the rx core control signal
+        input           p_ParityEnable_i,
         input           p_BigEnd_i,
         input           ParityMethod_i,
-        input [3:0]		AcqNumPerBit_i,
+        input [3:0]     AcqNumPerBit_i,
     // the error flag signal
-    	// output 			p_BaudrateError_o,	// the Baudrate error
-    	// output 			p_ParityError_o,	// the Parity error
+        // output           p_BaudrateError_o,  // the Baudrate error
+        // output           p_ParityError_o,    // the Parity error
     // the rx signal
-    	input 			Rx_i 			
-	);
-	// register definition
-		// NONE
-	// wire definition
-		wire 		Rx_Synch_w;
-		wire 		Bit_Synch_w;
-		wire 		p_ParityCalTrigger_w;
-		wire [4:0]	State_w;
-		wire [3:0]	BitCounter_w;
-		wire [3:0]	BitWidthCnt_w;
-		wire 		ParityResult_w;
-		wire [11:0]	Byte_w;
-		wire [7:0]	Data_w;
-		wire 		n_we_w;
-		wire 		p_full_w;
-		
-	FSM_Rx StateMachine(
-		.clk(clk),
-		.rst(rst),
-		.Rx_Synch_i(Rx_Synch_w),
-		.Bit_Synch_i(Bit_Synch_w),
-		.AcqSig_i(AcqSig_i),
-		.p_ParityEnable_i(p_ParityEnable_i),
-		// .p_ParityCalTrigger_o(p_ParityCalTrigger_w),
-		.State_o(State_w),
-		.BitCounter_o(BitCounter_w)
-		);
+        input           Rx_i            
+    );
+    // register definition
+        // NONE
+    // wire definition
+        wire        Rx_Synch_w;
+        wire        Bit_Synch_w;
+        wire        p_ParityCalTrigger_w;
+        wire [4:0]  State_w;
+        wire [3:0]  BitCounter_w;
+        wire [3:0]  BitWidthCnt_w;
+        wire        ParityResult_w;
+        wire [11:0] Byte_w;
+        wire [7:0]  Data_w;
+        wire        n_we_w;
+        wire        p_full_w;
+        
+    FSM_Rx StateMachine(
+        .clk(clk),
+        .rst(rst),
+        .Rx_Synch_i(Rx_Synch_w),
+        .Bit_Synch_i(Bit_Synch_w),
+        .AcqSig_i(AcqSig_i),
+        .p_ParityEnable_i(p_ParityEnable_i),
+        // .p_ParityCalTrigger_o(p_ParityCalTrigger_w),
+        .State_o(State_w),
+        .BitCounter_o(BitCounter_w)
+        );
 
-	ShiftRegister_Rx ShiftReg(
-		.clk(clk),
-		.rst(rst),
-		.AcqSig_i(AcqSig_i),
-		.AcqNumPerBit_i(AcqNumPerBit_i),
-		.Rx_i(Rx_i),
-		.State_i(State_w),
-		.BitWidthCnt_o(BitWidthCnt_w),
-		.ParityResult_i(ParityResult_w),
-		.Byte_o(Byte_w),
-		.Bit_Synch_o(Bit_Synch_w),
-		.Rx_Synch_o(Rx_Synch_w),
-		.p_ParityCalTrigger_o(p_ParityCalTrigger_w)
-		);
+    ShiftRegister_Rx ShiftReg(
+        .clk(clk),
+        .rst(rst),
+        .AcqSig_i(AcqSig_i),
+        .AcqNumPerBit_i(AcqNumPerBit_i),
+        .Rx_i(Rx_i),
+        .State_i(State_w),
+        .BitWidthCnt_o(BitWidthCnt_w),
+        .ParityResult_i(ParityResult_w),
+        .Byte_o(Byte_w),
+        .Bit_Synch_o(Bit_Synch_w),
+        .Rx_Synch_o(Rx_Synch_w),
+        .p_ParityCalTrigger_o(p_ParityCalTrigger_w)
+        );
 
-	ParityGenerator ParityGenerator(
+    ParityGenerator ParityGenerator(
         .clk(clk),
         .rst(rst),
         // .p_BaudSig_i(p_BaudSig_i),
@@ -94,22 +94,22 @@ module RxCore(
         .ParityResult_o(ParityResult_w)
         );
 
-	ByteAnalyse ByteAnalyse(
-		.clk(clk),
-		.rst(rst),
-		.n_we_o(n_we_w),
-		.data_o(Data_w),
-		.p_full_i(p_full_w),
-		.byte_i(Byte_w),
-		.Bit_Synch_i(Bit_Synch_w),
-		.State_i(State_w),
-		.BitWidthCnt_i(BitWidthCnt_w),
-		.p_ParityEnable_i(p_ParityEnable_i),
-		.p_BigEnd_i(p_BigEnd_i),
-		.p_ParityError_o(p_ParityError_o)
-		);
+    ByteAnalyse ByteAnalyse(
+        .clk(clk),
+        .rst(rst),
+        .n_we_o(n_we_w),
+        .data_o(Data_w),
+        .p_full_i(p_full_w),
+        .byte_i(Byte_w),
+        .Bit_Synch_i(Bit_Synch_w),
+        .State_i(State_w),
+        .BitWidthCnt_i(BitWidthCnt_w),
+        .p_ParityEnable_i(p_ParityEnable_i),
+        .p_BigEnd_i(p_BigEnd_i),
+        .p_ParityError_o(p_ParityError_o)
+        );
 
-	FIFO_ver1 #(.DEPTH(8'd128)) RxCoreFifo (
+    FIFO_ver1 #(.DEPTH(8'd128)) RxCoreFifo (
         .clk(clk),
         .rst(rst),
         .data_i(Data_w),
@@ -119,6 +119,6 @@ module RxCore(
         .p_empty_o(p_empty_o),
         .p_full_o(p_full_w)
         );
-	
+    
 
 endmodule

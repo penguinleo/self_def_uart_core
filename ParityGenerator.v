@@ -93,7 +93,7 @@ module ParityGenerator(
                     parity_result_r <= byte_xor;
                 end
                 else if (p_ParityCalTrigger_i == 1'b1 && ParityMethod_i == ODD) begin
-                    parity_result_r <= ~byte_xor;
+                    parity_result_r <= ~byte_xor ;
                 end
                 else begin
                     parity_result_r <= parity_result_r;

@@ -144,12 +144,12 @@ module FSM_Rx(
                         end
                     end
                     DATABITS: begin
-                        if ((Bit_Synch_i == 1'b1) && (bit_counter_w == 4'd8) && (p_ParityEnable_i == ENABLE)) begin
+                        if ((Bit_Synch_i == 1'b1) && (bit_counter_w == 4'd7) && (p_ParityEnable_i == ENABLE)) begin
                             state_A_r <= PARITYBIT;
                             state_B_r <= PARITYBIT;
                             state_C_r <= PARITYBIT; 
                         end
-                        else if ((Bit_Synch_i == 1'b1) && (bit_counter_w == 4'd8) && (p_ParityEnable_i == DISABLE)) begin
+                        else if ((Bit_Synch_i == 1'b1) && (bit_counter_w == 4'd7) && (p_ParityEnable_i == DISABLE)) begin
                             state_A_r <= STOPBIT;
                             state_B_r <= STOPBIT;
                             state_C_r <= STOPBIT; 

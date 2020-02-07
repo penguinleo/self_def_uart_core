@@ -97,6 +97,7 @@ module ShiftRegister_Rx(
         wire        acqsig_dly_2clk_w;  // the AcqSig_i delay 2 clock output
         wire        acqsig_dly_3clk_w;  // the AcqSig_i delay 3 clock output
         wire [3:0]  acquisition_point_w;// the acquisiiotn point 
+        wire        acquisite_time_w;   // the time point that the acquisition should be available
     // parameter definition
         // Receiving state machine definition  
             parameter   IDLE        = 5'b0_0001;   
@@ -115,12 +116,13 @@ module ShiftRegister_Rx(
         assign acqsig_dly_1clk_w    = shift_acq_r[0];
         assign acqsig_dly_2clk_w    = shift_acq_r[1];
         assign acqsig_dly_3clk_w    = shift_acq_r[2];
-        assign acquisition_point_w  = {1'b0, AcqNumPerBit_i[3:1]};
+        assign acquisition_point_w  = {1'b0, AcqNumPerBit_i[3:1]};      // the acquisition point is the middle point in the acquisition points
+        assign acquisite_time_w     = bit_width_cnt_r == acquisition_point_w;
         assign Rx_Synch_o           = falling_edge_rx_w & (State_i == IDLE);
         assign Bit_Synch_o          = (bit_width_cnt_r == AcqNumPerBit_i) & (State_i != IDLE) & (AcqSig_i == 1'b1);
         assign Byte_o               = byte_r;
         assign BitWidthCnt_o        = bit_width_cnt_r;
-        assign p_ParityCalTrigger_o = (State_i == DATABITS) & (bit_width_cnt_r == acquisition_point_w) & (acqsig_dly_2clk_w == 1'b1); // this design each data bit freshing the parity result
+        assign p_ParityCalTrigger_o = (State_i == DATABITS) & (acquisite_time_w == 1'b1) & (acqsig_dly_2clk_w == 1'b1); // this design each data bit freshing the parity result
     // Shift register for AcqSig_i delay
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -180,16 +182,16 @@ module ShiftRegister_Rx(
             else if ((State_i == IDLE)) begin
                 byte_r <= 12'b0000_0000_0000;
             end
-            else if ((State_i == STARTBIT) && (bit_width_cnt_r == acquisition_point_w) && (acqsig_dly_1clk_w == 1'b1)) begin   // the start bit
+            else if ((State_i == STARTBIT) && (acquisite_time_w == 1'b1) && (acqsig_dly_1clk_w == 1'b1)) begin   // the start bit
                 byte_r <= {byte_r[10:0],shift_reg_r[2]};
             end
-            else if ((State_i == DATABITS) && (bit_width_cnt_r == acquisition_point_w) && (acqsig_dly_1clk_w == 1'b1)) begin   // the data bits
+            else if ((State_i == DATABITS) && (acquisite_time_w == 1'b1) && (acqsig_dly_1clk_w == 1'b1)) begin   // the data bits
                 byte_r <= {byte_r[10:0],shift_reg_r[2]};
             end
-            else if ((State_i == PARITYBIT) && (bit_width_cnt_r == acquisition_point_w) && (acqsig_dly_3clk_w == 1'b1)) begin  // the parity bit if the FSM move to this state
+            else if ((State_i == PARITYBIT) && (acquisite_time_w == 1'b1) && (acqsig_dly_3clk_w == 1'b1)) begin  // the parity bit if the FSM move to this state
                 byte_r <= {byte_r[9:0],shift_reg_r[2],ParityResult_i};  // at this point the parity calculated by this module and received parity bit are all ready
             end
-            else if ((State_i == STOPBIT) && (bit_width_cnt_r == acquisition_point_w) && (acqsig_dly_1clk_w == 1'b1)) begin    // the stop bit
+            else if ((State_i == STOPBIT) && (acquisite_time_w == 1'b1) && (acqsig_dly_1clk_w == 1'b1)) begin    // the stop bit
                 byte_r <= {byte_r[10:0],shift_reg_r[2]};
             end
             else begin

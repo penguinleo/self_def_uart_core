@@ -82,7 +82,8 @@ module ParityGenerator(
             assign bit1_xor_bit0    = Data_i[1]         ^ Data_i[0] ;
             assign bit76_xor_bit54  = bit7_xor_bit6     ^ bit5_xor_bit4 ;
             assign bit32_xor_bit10  = bit3_xor_bit2     ^ bit1_xor_bit0 ;
-            assign byte_xor         = bit76_xor_bit54   ^ bit32_xor_bit10 ;        
+            assign byte_xor         = bit76_xor_bit54   ^ bit32_xor_bit10 ;
+            assign ParityResult_o   = parity_result_r;        
     // the parity result calculate
         always @(posedge clk or negedge rst) begin
             if (!rst) begin

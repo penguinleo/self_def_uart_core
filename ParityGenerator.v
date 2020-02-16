@@ -35,7 +35,7 @@ module ParityGenerator(
     input           clk,
     input           rst,
     // input           p_BaudSig_i,
-    input [4:0]     State_i,
+    // input [4:0]     State_i,
     input           p_ParityCalTrigger_i,   // the trigger to start parity calculate
     // input [3:0]     BitCounter_i,
     // input           ParityEnable_i, 
@@ -89,22 +89,16 @@ module ParityGenerator(
             if (!rst) begin
                 parity_result_r <= 1'b1;                
             end
-            else if (State_i == DATABITS) begin
-                if (p_ParityCalTrigger_i == 1'b1 && ParityMethod_i == EVEN) begin  // at the first bit ending time
+            else if (p_ParityCalTrigger_i == 1'b1) begin
+                if ( ParityMethod_i == EVEN) begin  // at the first bit ending time
                     parity_result_r <= byte_xor;
                 end
-                else if (p_ParityCalTrigger_i == 1'b1 && ParityMethod_i == ODD) begin
+                else begin // if ( ParityMethod_i == ODD)
                     parity_result_r <= ~byte_xor ;
                 end
-                else begin
-                    parity_result_r <= parity_result_r;
-                end
-            end
-            else if (State_i == PARITYBIT) begin
-                parity_result_r <= parity_result_r;
             end
             else begin
-                parity_result_r <= 1'b1;
+                parity_result_r <= parity_result_r;
             end
         end 
 endmodule

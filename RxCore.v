@@ -45,6 +45,7 @@ module RxCore(
     // wire definition
         wire        Rx_Synch_w;
         wire        Bit_Synch_w;
+        wire 		Byte_Synch_w;
         wire        p_ParityCalTrigger_w;
         wire [4:0]  State_w;
         wire [3:0]  BitCounter_w;
@@ -78,6 +79,7 @@ module RxCore(
         .ParityResult_i(ParityResult_w),
         .Byte_o(Byte_w),
         .Bit_Synch_o(Bit_Synch_w),
+        .Byte_Synch_o(Byte_Synch_w).
         .Rx_Synch_o(Rx_Synch_w),
         .p_ParityCalTrigger_o(p_ParityCalTrigger_w)
         );

@@ -62,6 +62,17 @@
 //              1   |   Prob5   |   The shift register maybe wrong, the shift register would fresh at each clock, while
 //                                  the judgement would last a long time, many many clocks, it is a serious problem, the 
 //                                  shift register byte_r would change many times during the judgement is available.
+//          2020-2-7
+//              1   |   Ans_5   |   The shift register should be simplified, the parity result from the parity module 
+//                                  should be removed from this module.The parity module was connected with the ByteAnalyse
+//                                  module.
+//                                  The byte_r register was modified when in IDLE state the register should keep its value,
+//                                  and fresh at the STARTBIT state.
+//          2020-2-11
+//              1   |   Mod_1   |   The Byte_o data definition was changed as below
+//                                  Bit     |   11  |   10  |   9   |   8   |   7   |   6   |   5   |   4   |   3   |   2   |   1   |   0   |
+//                                  Littel  | Start |   D0  |   D1  |   D2  |   D3  |   D4  |   D5  |   D6  |   D7  | Parity|  Stop |   X
+//                                  Big     |  bit  |   D7  |   D6  |   D5  |   D4  |   D3  |   D2  |   D1  |   D0  |  Bit  |  Bit  |   X
 // -----------------------------------------------------------------------------
 module ShiftRegister_Rx(
     // System signal definition
@@ -75,19 +86,17 @@ module ShiftRegister_Rx(
     // the interface with the FSM_Rx module
         input   [4:0]   State_i,
         output  [3:0]   BitWidthCnt_o,   // the index of the bit in the byte
-    // the interface with the parity generator module
-        input           ParityResult_i,
     // the output of the module
         output  [11:0]  Byte_o,         // the output of the shift register, including the data bits and the parity bit
     // the sychronization signal
         output          Bit_Synch_o,    // a bit has been received,the bit width counter has finished
         output          Rx_Synch_o,     // at the falling edge of the RX when the state machine is idle
-        output          p_ParityCalTrigger_o  // the signal trigger the parity generate module
+        output          Byte_Synch_o,   // a byte has been received, the byte analyse module should work on
+        // output          p_ParityCalTrigger_o  // the signal trigger the parity generate module
     );
     // register definition
         reg [2:0]   shift_acq_r;        // the acquisition signal delay register
         reg [2:0]   shift_reg_r;        // synchronousing the asynchronous signal 
-        reg [15:0]  serial_reg_r;
         reg [3:0]   bit_width_cnt_r;   // this register was applied to measure the width of the rx signal 
         reg [11:0]  byte_r;             // this register is working like a shift register
         reg         parity_error_r;     // the parity fail
@@ -106,7 +115,7 @@ module ShiftRegister_Rx(
             parameter   PARITYBIT   = 5'b0_1000;
             parameter   STOPBIT     = 5'b1_0000;
         // the acquisition point definition
-            parameter   ACQSITION_POINT = 4'd7;
+            // parameter   ACQSITION_POINT = 4'd7;
             // parameter   PARITY_POINT    = ACQSITION_POINT + 1'b1;
         // error definition
             parameter   WRONG       = 1'b1;
@@ -120,9 +129,10 @@ module ShiftRegister_Rx(
         assign acquisite_time_w     = bit_width_cnt_r == acquisition_point_w;
         assign Rx_Synch_o           = falling_edge_rx_w & (State_i == IDLE);
         assign Bit_Synch_o          = (bit_width_cnt_r == AcqNumPerBit_i) & (State_i != IDLE) & (AcqSig_i == 1'b1);
+        assign Byte_Synch_o         = (State_i == STOPBIT) & (acquisite_time_w == 1'b1) & (AcqSig_i == 1'b1);
         assign Byte_o               = byte_r;
         assign BitWidthCnt_o        = bit_width_cnt_r;
-        assign p_ParityCalTrigger_o = (State_i == DATABITS) & (acquisite_time_w == 1'b1) & (acqsig_dly_2clk_w == 1'b1); // this design each data bit freshing the parity result
+        // assign p_ParityCalTrigger_o = (State_i == PARITYBIT) & (acquisite_time_w == 1'b1) & (AcqSig_i == 1'b1);
     // Shift register for AcqSig_i delay
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -142,18 +152,6 @@ module ShiftRegister_Rx(
             end
             else begin
                 shift_reg_r <= shift_reg_r;
-            end
-        end
-    // serial data register operation  *the acquisition point* 
-        always @(posedge clk or negedge rst) begin
-            if (!rst) begin
-                serial_reg_r <= 16'd0;                
-            end
-            else if (AcqSig_i == 1'b1) begin
-                serial_reg_r <= {serial_reg_r[14:0],shift_reg_r[2]};
-            end
-            else begin
-                serial_reg_r <= serial_reg_r;
             end
         end
     // bit width counter,Once the system was synchronized the counter is started until the end of the byte
@@ -180,19 +178,19 @@ module ShiftRegister_Rx(
                 byte_r <= 12'b0000_0000_0000;                
             end
             else if ((State_i == IDLE)) begin
-                byte_r <= 12'b0000_0000_0000;
+                byte_r <= byte_r;
             end
             else if ((State_i == STARTBIT) && (acquisite_time_w == 1'b1) && (acqsig_dly_1clk_w == 1'b1)) begin   // the start bit
-                byte_r <= {byte_r[10:0],shift_reg_r[2]};
+                byte_r <= {shift_reg_r[2] , 11'd0};
             end
             else if ((State_i == DATABITS) && (acquisite_time_w == 1'b1) && (acqsig_dly_1clk_w == 1'b1)) begin   // the data bits
-                byte_r <= {byte_r[10:0],shift_reg_r[2]};
+                byte_r <= {byte_r[11] , byte_r[9:3] , shift_reg_r[2] , 1'b1 , byte_r[1:0]};
             end
-            else if ((State_i == PARITYBIT) && (acquisite_time_w == 1'b1) && (acqsig_dly_3clk_w == 1'b1)) begin  // the parity bit if the FSM move to this state
-                byte_r <= {byte_r[9:0],shift_reg_r[2],ParityResult_i};  // at this point the parity calculated by this module and received parity bit are all ready
+            else if ((State_i == PARITYBIT) && (acquisite_time_w == 1'b1) && (acqsig_dly_1clk_w == 1'b1)) begin  // the parity bit if the FSM move to this state
+                byte_r <= {byte_r[11:3] , shift_reg_r[2] , byte_r[1:0]}; 
             end
             else if ((State_i == STOPBIT) && (acquisite_time_w == 1'b1) && (acqsig_dly_1clk_w == 1'b1)) begin    // the stop bit
-                byte_r <= {byte_r[10:0],shift_reg_r[2]};
+                byte_r <= {byte_r[11:2],shift_reg_r[2],1'b1};
             end
             else begin
                 byte_r <= byte_r;

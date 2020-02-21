@@ -52,7 +52,7 @@ module ByteAnalyseV2(
     	output 	[7:0]	ParityCalData_o,
     	output 			p_ParityCalTrigger_o,
     	input 			ParityResult_i,
-        output          p_ParityError_o
+        output  [7:0]   ParityErrorNum_o
 	);
 	// register definition
 		// state machine
@@ -64,6 +64,7 @@ module ByteAnalyseV2(
 			reg 			n_we_r;				// the we signal of the fifo
 			reg 			n_rd_frame_fifo_r;	// 
 			reg [2:0]		rd_frame_fifo_shift_r;
+			reg [7:0]		parity_error_num_r; // the parity error number
 		// the time stamp
 			reg [31:0]	t0_s_stamp_r;
 			reg [11:0]	t0_ms_stamp_r;
@@ -126,6 +127,7 @@ module ByteAnalyseV2(
 			assign data_o 				= fifo_data_r;
 			assign p_ParityCalTrigger_o = parity_trig_r;
 			assign n_we_o  				= n_we_r;
+			assign ParityErrorNum_o 	= parity_error_num_r;
 		// inner logic signal
 			assign start_bit_w 				= byte_r[11];
 			assign little_end_data_w 		= {
@@ -449,5 +451,16 @@ module ByteAnalyseV2(
 				frame_info_output_r <= frame_info_output_r;
 			end
 		end
-
+	// parity error number counter
+		always @(posedge clk or negedge rst) begin
+			if (!rst) begin
+				parity_error_num_r <= 8'd0;				
+			end
+			else if ((state_r == FIFO) && (parity_result_r == PAR_FALSE)) begin
+				parity_error_num_r <= parity_error_num_r + 1'b1;
+			end
+			else begin
+				parity_error_num_r <= parity_error_num_r;
+			end
+		end
 endmodule

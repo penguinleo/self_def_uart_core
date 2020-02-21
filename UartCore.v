@@ -54,6 +54,9 @@ module UartCore(
         input [7:0]     CtrlReg1_i,  
         input [7:0]     CtrlReg2_i,
         input [7:0]     CtrlReg3_i,
+    // frame info 
+        input           n_rd_frame_fifo_i,
+        output [27:0]   frame_info_o,
     // rx fifo control signal
         output [7:0]    data_o,
         input           n_rd_i,     // the fifo read signal
@@ -62,6 +65,12 @@ module UartCore(
         input [7:0]     data_i,
         input           n_we_i,
         output          p_full_o,
+    // time stamp input
+        input [3:0]     acqurate_stamp_i,
+        input [11:0]    millisecond_stamp_i,
+        input [31:0]    second_stamp_i,     
+    // the error flag signal
+        output  [7:0]   ParityErrorNum_o,
     // Uart port
         input           Rx_i,
         output          Tx_o
@@ -106,6 +115,8 @@ module UartCore(
         .data_o(data_o),
         .n_rd_i(n_rd_i),
         .p_empty_o(p_empty_o),
+        .n_rd_frame_fifo_i(n_rd_frame_fifo_i),
+        .frame_info_o(frame_info_o),
         .AcqSig_i(AcqSig_w),
         .AcqNumPerBit_i(AcqNumPerBit_w),
         .p_ParityEnable_i(p_ParityEnable_w),

@@ -46,8 +46,8 @@ module ByteAnalyseV2(
         input           p_ParityEnable_i,
         input           p_BigEnd_i,
     // the frame fifo interface
-    	input 			n_rd_frame_fifo_i;
-    	output 	[27:0]	frame_info_o;
+    	input 			n_rd_frame_fifo_i,
+    	output 	[27:0]	frame_info_o,
     // the interface with the parity generator module
     	output 	[7:0]	ParityCalData_o,
     	output 			p_ParityCalTrigger_o,
@@ -82,7 +82,6 @@ module ByteAnalyseV2(
 			reg [27:0]	frame_info_output_r;		
 	// wire definition
 		// control signal
-			wire 		parity_cal_trgger_w;
 			wire [7:0]	big_end_data_w; 
 			wire [7:0]	little_end_data_w;	
 			wire 		start_bit_w;
@@ -148,319 +147,345 @@ module ByteAnalyseV2(
         	assign frame3_stamp_us_w = frame3_info_r[15:12];
         	assign frame3_byte_num_w = frame3_info_r[11:00];
         	assign frame_info_o 	 = frame_info_output_r;
-    // state machine
-    	always @(posedge clk or negedge rst) begin
-    		if (!rst) begin
-    			state_r <= IDLE;    			
-    		end
-    		else begin
-    			case(state_r)
-    				IDLE:	begin
-    					if (Byte_Synch_i == 1'b1) begin
-    						state_r <= BUFF;
-    					end
-    					else begin
-    						state_r <= IDLE;
-    					end
-    				end
-    				BUFF:	begin
-    					state_r <= PARR;
-    				end
-    				PARR:	begin
-    					state_r <= CHCK;
-    				end
-    				CHCK:	begin
-    					state_r <= FIFO;
-    				end
-    				FIFO:	begin
-    					state_r <= IDLE;
-    				end
-    				default: begin
-    					state_r <= IDLE;
-    				end
-    			endcase
-    		end
-    	end
-	// byte_r buffer fresh module
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				// reset
-				byte_r <= 12'h000;
+	// Basic function module
+	    // state machine
+	    	always @(posedge clk or negedge rst) begin
+	    		if (!rst) begin
+	    			state_r <= IDLE;    			
+	    		end
+	    		else begin
+	    			case(state_r)
+	    				IDLE:	begin
+	    					if (Byte_Synch_i == 1'b1) begin
+	    						state_r <= BUFF;
+	    					end
+	    					else begin
+	    						state_r <= IDLE;
+	    					end
+	    				end
+	    				BUFF:	begin
+	    					state_r <= PARR;
+	    				end
+	    				PARR:	begin
+	    					state_r <= CHCK;
+	    				end
+	    				CHCK:	begin
+	    					state_r <= FIFO;
+	    				end
+	    				FIFO:	begin
+	    					state_r <= IDLE;
+	    				end
+	    				default: begin
+	    					state_r <= IDLE;
+	    				end
+	    			endcase
+	    		end
+	    	end
+		// byte_r buffer fresh module
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					// reset
+					byte_r <= 12'h000;
+				end
+				else if (Byte_Synch_i == 1'b1) begin
+					byte_r <= byte_i;
+				end
+				else begin
+					byte_r <= byte_r;
+				end
 			end
-			else if (Byte_Synch_i == 1'b1) begin
-				byte_r <= byte_i;
+		// parity trigger sig register
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					parity_trig_r <= 1'b0;				
+				end
+				else if ((state_r == BUFF) && (p_ParityEnable_i == ENABLE)) begin
+					parity_trig_r <= 1'b1;
+				end 
+				else begin
+					parity_trig_r <= 1'b0;
+				end
 			end
-			else begin
-				byte_r <= byte_r;
+		// fifo data output register fresh
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					fifo_data_r <= 8'd0;				
+				end
+				else if (state_r == PARR) begin
+					if (p_BigEnd_i == BIGEND) begin
+						fifo_data_r <= big_end_data_w;
+					end
+					else begin
+						fifo_data_r <= little_end_data_w;
+					end
+				end
+				else begin
+					fifo_data_r <= fifo_data_r;
+				end
 			end
-		end
-	// Time stample 
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				t0_s_stamp_r 		<= 32'd0;
-				t0_ms_stamp_r 		<= 12'd0;
-				t0_100us_stamp_r	<= 4'd0;			
+		// parity results register
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					parity_result_r <= PAR_TRUE;				
+				end
+				else if ((state_r == CHCK) && (p_ParityEnable_i == ENABLE)) begin
+					parity_result_r <= (ParityResult_i ^~ parity_bit_w);
+				end
+				else if (p_ParityEnable_i == DISABLE) begin
+					parity_result_r <= PAR_TRUE;
+				end
+				else begin
+					parity_result_r <= parity_result_r;
+				end
 			end
-			else if (Byte_Synch_i == 1'b1) begin
-				t0_s_stamp_r 		<= second_stamp_i;
-				t0_ms_stamp_r 	 	<= millisecond_stamp_i;
-				t0_100us_stamp_r 	<= acqurate_stamp_i;
+		// FIFO operation
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					n_we_r <= 1'b1;				
+				end
+				else if ((state_r == FIFO) && (parity_result_r == PAR_TRUE)) begin
+					n_we_r <= 1'b0;
+				end
+				else begin
+					n_we_r <= 1'b1;
+				end
 			end
-		end
-	// Byte interval counter
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				byte_interval_cnt_r <= MAX_CNT_NUM;				
+	// Advanced function module
+		// Time stample 
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					t0_s_stamp_r 		<= 32'd0;
+					t0_ms_stamp_r 		<= 12'd0;
+					t0_100us_stamp_r	<= 4'd0;			
+				end
+				else if (Byte_Synch_i == 1'b1) begin
+					t0_s_stamp_r 		<= second_stamp_i;
+					t0_ms_stamp_r 	 	<= millisecond_stamp_i;
+					t0_100us_stamp_r 	<= acqurate_stamp_i;
+				end
+				else begin
+					t0_s_stamp_r		<= t0_s_stamp_r;
+					t0_ms_stamp_r		<= t0_ms_stamp_r;
+					t0_100us_stamp_r 	<= t0_100us_stamp_r;
+				end
 			end
-			else if (Byte_Synch_i == 1'b1) begin
-				byte_interval_cnt_r <= 8'h00;
-			end
-			else if (BaudSig_i == 1'b1) begin
-				if (byte_interval_cnt_r == MAX_CNT_NUM) begin
+		// Byte interval counter
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					byte_interval_cnt_r <= MAX_CNT_NUM;				
+				end
+				else if (Byte_Synch_i == 1'b1) begin
+					byte_interval_cnt_r <= 8'h00;
+				end
+				else if (BaudSig_i == 1'b1) begin
+					if (byte_interval_cnt_r == MAX_CNT_NUM) begin
+						byte_interval_cnt_r <= byte_interval_cnt_r;
+					end
+					else begin
+						byte_interval_cnt_r <= byte_interval_cnt_r + 1'b1;
+					end
+				end
+				else begin
 					byte_interval_cnt_r <= byte_interval_cnt_r;
 				end
-				else begin
-					byte_interval_cnt_r <= byte_interval_cnt_r + 1'b1;
+			end
+		// frame recognize
+			always @(posedge clk or negedge rst) begin
+				if (rst) begin
+					new_frame_sig_r <= NEW_FRAME;				
 				end
-			end
-			else begin
-				byte_interval_cnt_r <= byte_interval_cnt_r;
-			end
-		end
-	// frame recognize
-		always @(posedge clk or negedge rst) begin
-			if (rst) begin
-				new_frame_sig_r <= NEW_FRAME;				
-			end
-			else if ((Byte_Synch_i == 1'b1) && (byte_interval_cnt_r >= FRAME_BYTE_INTERVAL)) begin
-				new_frame_sig_r <= NEW_FRAME;
-			end
-			else begin
-				new_frame_sig_r <= NOT_FINISH;
-			end
-		end 
-	// parity trigger sig register
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				parity_trig_r <= 1'b0;				
-			end
-			else if ((state_r == PARR) && (p_ParityEnable_i == ENABLE)) begin
-				parity_trig_r <= 1'b1;
-			end 
-			else begin
-				parity_trig_r <= 1'b0;
-			end
-		end
-	// fifo data output register fresh
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				fifo_data_r <= 8'd0;				
-			end
-			else if (state_r == PARR) begin
-				if (p_BigEnd_i == BIGEND) begin
-					fifo_data_r <= big_end_data_w;
+				else if ((BaudSig_i == 1'b1) && (byte_interval_cnt_r >= FRAME_BYTE_INTERVAL) ) begin
+					new_frame_sig_r <= NEW_FRAME;
 				end
 				else begin
-					fifo_data_r <= little_end_data_w;
+					new_frame_sig_r <= NOT_FINISH;
 				end
-			end
-		end
-	// parity results register
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				parity_result_r <= PAR_TRUE;				
-			end
-			else if ((state_r == CHCK) && (p_ParityEnable_i == ENABLE)) begin
-				parity_result_r <= (ParityResult_i ^~ parity_bit_w);
-			end
-			else if (p_ParityEnable_i == DISABLE) begin
-				parity_result_r <= PAR_TRUE;
-			end
-			else begin
-				parity_result_r <= parity_result_r;
-			end
-		end
-	// FIFO operation
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				n_we_r <= 1'b1;				
-			end
-			else if ((state_r == FIFO) && (parity_result_r == PAR_TRUE)) begin
-				n_we_r <= 1'b0;
-			end
-			else begin
-				n_we_r <= 1'b1;
-			end
-		end
-	// frame bytes number counter
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				byte_num_cnt_r <= 8'd0;		
-			end
-			else if ((state_r == FIFO) && (parity_result_r == PAR_TRUE)) begin
-				if (new_frame_sig_r == NEW_FRAME) begin
-					byte_num_cnt_r <= 8'b1;
+			end 		
+		// byte number counter
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					byte_num_cnt_r <= 8'd0;		
+				end
+				else if (state_r == IDLE) begin
+					if (new_frame_sig_r == NEW_FRAME) begin
+						byte_num_cnt_r <= 8'd0;
+					end
+					else begin
+						byte_num_cnt_r <= byte_num_cnt_r;
+					end
+				end
+				else if (state_r == FIFO) begin
+					if (parity_result_r == PAR_TRUE) begin
+						byte_num_cnt_r <= byte_num_cnt_r + 1'b1;
+					end
+					else begin
+						byte_num_cnt_r <= byte_num_cnt_r;
+					end
 				end
 				else begin
-					byte_num_cnt_r <= byte_num_cnt_r + 1'b1;
+					byte_num_cnt_r <= byte_num_cnt_r;
 				end
 			end
-			else begin
-				byte_num_cnt_r <= byte_num_cnt_r;
-			end
-		end
-	// shift register of n_rd_frame_fifo_i
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				rd_frame_fifo_shift_r <= 3'b111;				
-			end
-			else begin
-				rd_frame_fifo_shift_r <= {rd_frame_fifo_shift_r[1:0] , n_rd_frame_fifo_i};
-			end
-		end
-	// n_rd_frame_fifo_r fresh
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				n_rd_frame_fifo_r <= 1'b1;				
-			end
-			else if (falling_edge_rd_fifo_w == 1'b1) begin
-				n_rd_frame_fifo_r <= 1'b0;
-			end
-			else begin
-				if (state_r != FIFO) begin
-					n_rd_frame_fifo_r <= 1'b1;
+		// shift register of n_rd_frame_fifo_i
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					rd_frame_fifo_shift_r <= 3'b111;				
 				end
 				else begin
+					rd_frame_fifo_shift_r <= {rd_frame_fifo_shift_r[1:0] , n_rd_frame_fifo_i};
+				end
+			end
+		// n_rd_frame_fifo_r fresh
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					n_rd_frame_fifo_r <= 1'b1;				
+				end
+				else if (falling_edge_rd_fifo_w == 1'b1) begin
 					n_rd_frame_fifo_r <= 1'b0;
 				end
+				else begin
+					if (state_r != FIFO) begin  // FIFO state the rd sig is locked 
+						n_rd_frame_fifo_r <= 1'b1;
+					end
+					else begin
+						n_rd_frame_fifo_r <= n_rd_frame_fifo_r;
+					end
+				end
 			end
-		end
-	// frame number counter 
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				frame_num_cnt_r <= 4'd0;				
-			end
-			else if ((state_r == FIFO) && (parity_result_r == PAR_TRUE)) begin
-				if (new_frame_sig_r == NEW_FRAME) begin             // there is a new frame receivied
-					if (frame_num_cnt_r < 4'd4) begin
-						frame_num_cnt_r <= frame_num_cnt_r + 1'b1;
+		// frame number counter 
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					frame_num_cnt_r <= 4'd0;				
+				end
+				else if (state_r == IDLE) begin
+					if ((new_frame_sig_r == NEW_FRAME) && (byte_num_cnt_r != 8'd0)) begin  //
+						if (frame_num_cnt_r >= 4'd4) begin
+							frame_num_cnt_r <= 4'd4;
+						end
+						else begin
+							frame_num_cnt_r <= frame_num_cnt_r + 1'b1;
+						end
+					end
+					else if ((n_rd_frame_fifo_r == 1'b0) && (frame_num_cnt_r != 4'd0)) begin
+						frame_num_cnt_r <= frame_num_cnt_r - 1'b1;
 					end
 					else begin
 						frame_num_cnt_r <= frame_num_cnt_r;
 					end
 				end
 				else begin
-					frame_num_cnt_r <= frame_num_cnt_r;
+					if ((n_rd_frame_fifo_r == 1'b0) && (frame_num_cnt_r != 4'd0)) begin
+						frame_num_cnt_r <= frame_num_cnt_r - 1'b1;
+					end
+					else begin
+						frame_num_cnt_r <= frame_num_cnt_r;
+					end
 				end
 			end
-			else if (state_r != FIFO) begin
-				if ((n_rd_frame_fifo_r == 1'b0) && (frame_num_cnt_r != 4'd0)) begin  // if the rd frame info fifo signal is available, and the fifo is not empty
-					frame_num_cnt_r <= frame_num_cnt_r - 1'b1;
+		// fram information buffer fresh
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					frame0_info_r <= 28'd0;
+					frame1_info_r <= 28'd0;
+					frame2_info_r <= 28'd0;
+					frame3_info_r <= 28'd0;		
 				end
-				else begin
-					frame_num_cnt_r <= frame_num_cnt_r
-				end
-			end
-			else begin
-				frame_num_cnt_r <= frame_num_cnt_r;
-			end
-		end
-	// fram information buffer fresh
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				frame0_info_r <= 28'd0;
-				frame1_info_r <= 28'd0;
-				frame2_info_r <= 28'd0;
-				frame3_info_r <= 28'd0;		
-			end
-			else if ((state_r == FIFO) && (parity_result_r == PAR_TRUE)) begin
-				if (new_frame_sig_r == NEW_FRAME) begin
-					if (frame_num_cnt_r == 4'd0) begin
-						frame0_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};
-						frame1_info_r <= 28'd0;
-						frame2_info_r <= 28'd0;
-						frame3_info_r <= 28'd0;	
+				else if (state_r == IDLE) begin  // in IDLE state the system finds the byte interval over the limit
+					if ((new_frame_sig_r == NEW_FRAME) && (byte_num_cnt_r != 8'd0)) begin
+						if (frame_num_cnt_r == 4'd0) begin
+							frame0_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};
+							frame1_info_r <= 28'd0;
+							frame2_info_r <= 28'd0;
+							frame3_info_r <= 28'd0;	
+						end
+						else if (frame_num_cnt_r == 4'd1) begin
+							frame0_info_r <= frame0_info_r;
+							frame1_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};
+							frame2_info_r <= 28'd0;
+							frame3_info_r <= 28'd0;	
+						end
+						else if (frame_num_cnt_r == 4'd2) begin
+							frame0_info_r <= frame0_info_r;
+							frame1_info_r <= frame1_info_r;
+							frame2_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};
+							frame3_info_r <= 28'd0;	
+						end
+						else if (frame_num_cnt_r == 4'd3) begin // fifo is not full
+							frame0_info_r <= frame0_info_r;
+							frame1_info_r <= frame1_info_r;
+							frame2_info_r <= frame2_info_r;
+							frame3_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};	
+						end
+						else begin   // when fifo if full
+							frame0_info_r <= frame1_info_r;
+							frame1_info_r <= frame2_info_r;
+							frame2_info_r <= frame3_info_r;
+							frame3_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};
+						end
 					end
-					else if (frame_num_cnt_r == 4'd1) begin
-						frame0_info_r <= frame0_info_r;
-						frame1_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};
-						frame2_info_r <= 28'd0;
-						frame3_info_r <= 28'd0;	
-					end
-					else if (frame_num_cnt_r == 4'd2) begin
-						frame0_info_r <= frame0_info_r;
-						frame1_info_r <= frame1_info_r;
-						frame2_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};
-						frame3_info_r <= 28'd0;	
-					end
-					else if (frame_num_cnt_r == 4'd3) begin // fifo is not full
-						frame0_info_r <= frame0_info_r;
-						frame1_info_r <= frame1_info_r;
-						frame2_info_r <= frame2_info_r;
-						frame3_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};	
-					end
-					else begin   // when fifo if full
+					else if ((n_rd_frame_fifo_r == 1'b0) && (frame_num_cnt_r != 4'd0)) begin  // ouput frame info
 						frame0_info_r <= frame1_info_r;
 						frame1_info_r <= frame2_info_r;
 						frame2_info_r <= frame3_info_r;
-						frame3_info_r <= {t0_100us_stamp_r,t0_ms_stamp_r,byte_num_cnt_r};
+						frame3_info_r <= 28'd0;						
+					end
+					else begin
+						frame0_info_r <= frame0_info_r;
+						frame1_info_r <= frame1_info_r;
+						frame2_info_r <= frame2_info_r;
+						frame3_info_r <= frame3_info_r;
 					end
 				end
 				else begin
-					frame0_info_r <= frame0_info_r;
-					frame1_info_r <= frame1_info_r;
-					frame2_info_r <= frame2_info_r;
-					frame3_info_r <= frame3_info_r;
+					if ((n_rd_frame_fifo_i == 1'b0) && (frame_num_cnt_r != 4'd0)) begin
+						frame0_info_r <= frame1_info_r;
+						frame1_info_r <= frame2_info_r;
+						frame2_info_r <= frame3_info_r;
+						frame3_info_r <= 28'd0;
+					end
+					else begin
+						frame0_info_r <= frame0_info_r;
+						frame1_info_r <= frame1_info_r;
+						frame2_info_r <= frame2_info_r;
+						frame3_info_r <= frame3_info_r;
+					end
 				end
 			end
-			else if (state_r != FIFO) begin
-				if ((n_rd_frame_fifo_r == 1'b0) && (frame_num_cnt_r != 4'd0)) begin
-					frame0_info_r <= frame1_info_r;
-					frame1_info_r <= frame2_info_r;
-					frame2_info_r <= frame3_info_r;
-					frame3_info_r <= 28'd0;
+		// frame_info_output_r frame info fifo output port
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					frame_info_output_r <= 28'd0;				
 				end
-				else begin
-					frame0_info_r <= frame0_info_r;
-					frame1_info_r <= frame1_info_r;
-					frame2_info_r <= frame2_info_r;
-					frame3_info_r <= frame3_info_r;
-				end
-			end
-			else begin
-				frame0_info_r <= frame0_info_r;
-				frame1_info_r <= frame1_info_r;
-				frame2_info_r <= frame2_info_r;
-				frame3_info_r <= frame3_info_r;
-			end
-		end
-	// frame_info_output_r frame info fifo output port
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				frame_info_output_r <= 28'd0;				
-			end
-			else if (state_r != FIFO) begin
-				if ((n_rd_frame_fifo_r == 1'b0) && (frame_num_cnt_r != 4'd0)) begin
-					frame_info_output_r <= frame0_info_r;
+				else if (state_r == IDLE) begin
+					if ((new_frame_sig_r == NEW_FRAME) && (byte_num_cnt_r != 8'd0)) begin  //
+						frame_info_output_r <= frame_info_output_r;
+					end
+					else if ((n_rd_frame_fifo_r == 1'b0) && (frame_num_cnt_r != 4'd0)) begin
+						frame_info_output_r <= frame0_info_r;
+					end
+					else begin
+						frame_info_output_r <= frame_info_output_r;
+					end
 				end
 				else begin
-					frame_info_output_r <= frame_info_output_r;
+					if ((n_rd_frame_fifo_r == 1'b0) && (frame_num_cnt_r != 4'd0)) begin
+						frame_info_output_r <= frame0_info_r;
+					end
+					else begin
+						frame_info_output_r <= frame_info_output_r;
+					end
 				end
 			end
-			else begin
-				frame_info_output_r <= frame_info_output_r;
+		// parity error number counter
+			always @(posedge clk or negedge rst) begin
+				if (!rst) begin
+					parity_error_num_r <= 8'd0;				
+				end
+				else if ((state_r == FIFO) && (parity_result_r == PAR_FALSE)) begin
+					parity_error_num_r <= parity_error_num_r + 1'b1;
+				end
+				else begin
+					parity_error_num_r <= parity_error_num_r;
+				end
 			end
-		end
-	// parity error number counter
-		always @(posedge clk or negedge rst) begin
-			if (!rst) begin
-				parity_error_num_r <= 8'd0;				
-			end
-			else if ((state_r == FIFO) && (parity_result_r == PAR_FALSE)) begin
-				parity_error_num_r <= parity_error_num_r + 1'b1;
-			end
-			else begin
-				parity_error_num_r <= parity_error_num_r;
-			end
-		end
 endmodule

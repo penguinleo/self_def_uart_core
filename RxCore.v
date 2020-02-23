@@ -84,13 +84,11 @@ module RxCore(
         .AcqSig_i(AcqSig_i),
         .AcqNumPerBit_i(AcqNumPerBit_i),
         .Rx_i(Rx_i),
-        .AcqNumPerBit_i(AcqNumPerBit_w),
         .State_i(State_w),
         .BitWidthCnt_o(BitWidthCnt_w),
-        .ParityResult_i(ParityResult_w),
         .Byte_o(Byte_w),
         .Bit_Synch_o(Bit_Synch_w),
-        .Byte_Synch_o(Byte_Synch_w).
+        .Byte_Synch_o(Byte_Synch_w),
         .Rx_Synch_o(Rx_Synch_w)
         );
 
@@ -98,7 +96,7 @@ module RxCore(
         .clk(clk),
         .rst(rst),
         // .p_BaudSig_i(p_BaudSig_i),
-        .State_i(State_w),
+        // .State_i(State_w),
         .p_ParityCalTrigger_i(p_ParityCalTrigger_w),
         // .BitCounter_i(BitCounter_w),
         .ParityMethod_i(ParityMethod_i),
@@ -106,7 +104,7 @@ module RxCore(
         .ParityResult_o(ParityResult_w)
         );
 
-    ByteAnalyse ByteAnalyse(
+    ByteAnalyseV2 ByteAnalyse(
       	.clk(clk),
 		.rst(rst),
 		.n_we_o(n_we_w),
@@ -128,7 +126,7 @@ module RxCore(
 		.ParityCalData_o(ParityData_w),
 		.p_ParityCalTrigger_o(p_ParityCalTrigger_w),
 		.ParityResult_i(ParityResult_w),
-		.ParityErrorNum_o(ParityErrorNum_w),
+		.ParityErrorNum_o(ParityErrorNum_o)
         );
 
     FIFO_ver1 #(.DEPTH(8'd128)) RxCoreFifo (

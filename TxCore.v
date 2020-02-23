@@ -84,7 +84,7 @@ module TxCore(
         .clk(clk),
         .rst(rst),
         // .p_BaudSig_i(p_BaudSig_i),
-        .State_i(State_w),
+        // .State_i(State_w),
         .p_ParityCalTrigger_i(p_ParityCalTrigger_w),
         // .BitCounter_i(BitCounter_w),
         .ParityMethod_i(ParityMethod_i),

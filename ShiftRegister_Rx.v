@@ -91,7 +91,7 @@ module ShiftRegister_Rx(
     // the sychronization signal
         output          Bit_Synch_o,    // a bit has been received,the bit width counter has finished
         output          Rx_Synch_o,     // at the falling edge of the RX when the state machine is idle
-        output          Byte_Synch_o,   // a byte has been received, the byte analyse module should work on
+        output          Byte_Synch_o    // a byte has been received, the byte analyse module should work on
         // output          p_ParityCalTrigger_o  // the signal trigger the parity generate module
     );
     // register definition

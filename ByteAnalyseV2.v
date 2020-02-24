@@ -291,14 +291,19 @@ module ByteAnalyseV2(
 			end
 		// frame recognize
 			always @(posedge clk or negedge rst) begin
-				if (rst) begin
-					new_frame_sig_r <= NEW_FRAME;				
+				if (!rst) begin
+					new_frame_sig_r <= NOT_FINISH;				
 				end
-				else if ((BaudSig_i == 1'b1) && (byte_interval_cnt_r >= FRAME_BYTE_INTERVAL) ) begin
-					new_frame_sig_r <= NEW_FRAME;
+				else if (BaudSig_i == 1'b1) begin
+					if (byte_interval_cnt_r >= FRAME_BYTE_INTERVAL) begin
+						new_frame_sig_r <= NEW_FRAME;
+					end
+					else begin
+						new_frame_sig_r <= NOT_FINISH;
+					end
 				end
 				else begin
-					new_frame_sig_r <= NOT_FINISH;
+					new_frame_sig_r <= new_frame_sig_r;
 				end
 			end 		
 		// byte number counter

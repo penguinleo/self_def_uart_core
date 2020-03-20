@@ -48,6 +48,7 @@
 //                                  signal would keep high, which means next period is a new bit.
 //      4   |   Rx_Synch_o      :   It is an important sychronous signal, which sychronous the RxCore with the input 
 //                                  rx signal.
+//      5   |   Byte_Synch_o    :   The synchronouse signal at the stop bit acquisition point.
 // Note:    2019-12-02
 //              1   |   Prob1   |   The bit_width_cnt_r is better to be reinforced by tri-mode redundancy design;
 //              2   |   Prob2   |   The byte_r is better to be reinforced by tri-mode redundancy design;

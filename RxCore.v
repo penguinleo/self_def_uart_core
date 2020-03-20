@@ -158,7 +158,7 @@ module RxCore(
 		.Bit_Synch_i(Bit_Synch_w),
 		.Byte_Synch_i(Byte_Synch_w),
 		.State_i(State_w),
-		.BitWidthCnt_i(BitWidthCnt_w),
+		// .BitWidthCnt_i(BitWidthCnt_w),
 		.acqurate_stamp_i(acqurate_stamp_i),
 		.millisecond_stamp_i(millisecond_stamp_i),
 		.second_stamp_i(second_stamp_i),

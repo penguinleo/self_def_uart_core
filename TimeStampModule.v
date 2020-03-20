@@ -6,15 +6,21 @@
 // Create : 2020-01-31 16:42:10
 // Revise : 2020-01-31 16:42:10
 // Editor : sublime text3, tab size (4)
-// Comment: This module generate the time stamp for the data receving
+// Comment: This module generate the time stamp for the uart module
 // 
 // Input Signal List:
-//      1   :   clk, the system input clock signal, the frequency is greater than 40MHz
-//      2   :   rst, the system reset signal, the module should be reset asynchronously,
-//                   and must be released synchronously with the clock;
-//      3   :   
+//      1   :   clk,                        :   the system input clock signal, the frequency is greater than 40MHz
+//      2   :   rst,                        :   the system reset signal, the module should be reset asynchronously,
+//                                          :   and must be released synchronously with the clock;
+//      3   :   p_sig_10MHz_i,              :   the 10MHz signal, rising edge detect.
+//      4   :   p_sig_pps_i,                :   the pps signal, rising edge detect, which would delay 3 system clock.
 // Output Signal List:
-//      1   :   
+//      1   :   acqurate_stamp_o[3:0]       :   The time stamp(0.1ms) from other module. The equivalent of this data is 0.1ms. The range of 
+//                                              data is 0 ~ 9;
+//      2   :   millisecond_stamp_o[11:0]   :   The time stamp(millisecond) from other module. The equivalent of this data is 1ms. The range
+//                                              of this data is 0 ~ 999;
+//      3   :   second_stamp_o[31:0]        :   The time stamp(second) from other module. The equivalent of this data is sencond. The range 
+//                                              of this data is 0 ~ ‭4294967295‬
 // Note 
 // -----------------------------------------------------------------------------
 module TimeStampModule(

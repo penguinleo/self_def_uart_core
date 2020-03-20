@@ -54,6 +54,7 @@ module UartCore(
         input [7:0]     CtrlReg1_i,  
         input [7:0]     CtrlReg2_i,
         input [7:0]     CtrlReg3_i,
+        input           n_clr_i,
     // frame info 
         input           n_rd_frame_fifo_i,
         output [27:0]   frame_info_o,
@@ -114,6 +115,7 @@ module UartCore(
         .rst(rst),
         .data_o(data_o),
         .n_rd_i(n_rd_i),
+        .n_clr_i(n_clr_i),
         .p_empty_o(p_empty_o),
         .n_rd_frame_fifo_i(n_rd_frame_fifo_i),
         .frame_info_o(frame_info_o),
@@ -137,6 +139,7 @@ module UartCore(
         .rst(rst),
         .data_i(data_i),
         .n_we_i(n_we_i),
+        .n_clr_i(n_clr_i),
         .p_full_o(p_full_o),
         .p_BaudSig_i(BaudSig_w),
         .p_ParityEnable_i(p_ParityEnable_w),

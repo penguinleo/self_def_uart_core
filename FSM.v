@@ -6,15 +6,23 @@
 // Create   :   2019-10-18 10:06:59
 // Revise   :   2019-10-18 10:06:59
 // Editor   :   sublime text3, tab size (4)
-// Comment  :   This module is the state machine of the txcore
-//              INTERVAL :  it is the idle state, the interval time between two bytes, or waiting for the upper module send in data
+// Comment  :   This module is the state machine of the txcore, the upper module of this module is the TxCore. 
+//              The state machine is designed according to the protocol of serial transmitting.
+//              INTERVAL :  it is the idle state, the interval time between two bytes, or waiting for the upper module send data into the fifo
+//                          the next state is the STARTBIT if the statement is satisfied, or the INTERVAL otherwise.
 //              STARTBIT :  when the fifo is not empty, the state machine would step into the startbit state, that means the txcore
 //                          would set the tx signal low for a bit time. at the same time the txcore should read the fifo and get the 
 //                          data which need to be sent.
+//                          the next state is DATABITS, the state transfer is triggered by the positive of BaudSig.
 //              DATABITS :  when start bit time is passed, the tx core would send out the byte bit by bit. This state would last until 
-//                          all data bits are send.
-//              PARITYBIT:  in this state the 
-//               
+//                          all data bits are send. The BitCounter register would help the core to identify the index of the bit. The 
+//                          data bit shift is controlled by the BaudSig. When BaudSig is positive, the tx wire would setup the next data 
+//                          bit, at the same time, the BitCounter would gain.
+//                          The next state if the PARITYBIT when the parity bit function was enabled, or the STOPBIT when the parity function
+//                          is disabled.
+//              PARITYBIT:  in this state the parity bit is sending on the tx wire.
+//              STOPBIT  :  the last bit sent on the tx wire, After the parity bit, when the parity function is enabled or the last bit of the 
+//                          data bit.
 // Input Signal List:
 //      1   :   clk, the system input clock signal, the frequency is greater than 40MHz
 //      2   :   rst, the system reset signal, the module should be reset asynchronously,
@@ -25,7 +33,8 @@
 //      5   :   ParityEnable_i, the parity enable control bit. 
 // Output Signal List:
 //      1   :   State_o[4:0], the state machine output
-// 
+//      2   :   p_ParityCalTrigger_o, the trigger signal for the parity calculate module to start the parity calculate
+//      3   :   BitCounter_o[3:0], indicate the index of the data bit which is on the tx wire.
 // 
 // -----------------------------------------------------------------------------
 module FSM(

@@ -14,14 +14,12 @@
 //      1   :   clk, the system input clock signal, the frequency is greater than 40MHz
 //      2   :   rst, the system reset signal, the module should be reset asynchronously,
 //                   and must be released synchronously with the clock;
-//      3   :   p_BaudSig_i, the baudrate signal from the Baudrate generate module
-//      4   :   State_i, the state machine output the state
-//      5   :   ParityEnable_i, the parity enable signal(reserved,not applied)
+//      3   :   p_ParityCalTrigger_i, the trigger signal given by the FSM of the TX core and the shiftregister of the RX core
+//                                      when the signal is setted, this module should give out the parity result 
 //      6   :   ParityMethod_i, the parity method,0-even,1-odd
 //      7   :   Data_i, the input data
 // Output Signal List:
 //      1   :   ParityResult_o, the parity calculate result.
-//      2   :   
 // Note     2019-12-14
 //              1   |   Prob1   |   The parity result calculate judgement is wrong, when using in the RxCore module! 
 //                                  the parity result is freshed at the wrong time. 
@@ -30,6 +28,8 @@
 //                                  DATABITS state the bit counter would not be zero, except the first bit! Thus,
 //                                  the parity result would be wrong.
 //                                  This module is applied for TxCore only!
+//              2   |   Ans1    |   The State_i and the BitCounter_i are removed from the module, instead the p_ParityCalTrigger_i
+//                                  is introduced into the module to satisfy different requirement of Rx and Tx core
 // -----------------------------------------------------------------------------
 module ParityGenerator(
     input           clk,

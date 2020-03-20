@@ -11,23 +11,65 @@
 //          -ion. The byte compensation will be introduced into the system in next version.
 //          The acquisition time in a bit period is the sum of PosCompensation_i[7:4] and 
 //          PosCompensation_i[3:0].
+//          The error of the BaudSig signal should be equal than 1 system clk.
+//          The compensation method as below.
+//          To be honest, the simplest way to implement a serial communication core in the 
+//          system is choosing an appropriate crystal for the serial communication core. But
+//          this method would reduce the flexibility of the module. 
+//          In this proj, we try to implement the serial communication core with the system 
+//          clock, and try to compensate the error to 1 system clock.
+//          Principle I: For 1 baudrate signal generate, the most acqurate way is using a reg
+//                      counting from zero to the limitation(the limitation is defined by the
+//                      divide relationship between the system clock frequency and the required
+//                      baudrate frequency).
+//              For example:    40MHz system clock, 
+//                              115200bps baudrate.
+//                          The bit time of the baudrate signal is about 8.680556us
+//                          while the time of the system clock is 25ns.
+//                          So when the count limit is 347, the error would be -5.556ns.
+//                          when the count limit is 348, the error would be 19.444ns.
+//          We using the AcqSig to improve the reliablity of the rx core. The AcqSig would be
+//          2 times of the BaudSig or more. The maximum time is 16 time.
+//              So the example should be:   40MHz system clock, 
+//                                          115200bps baudrate, 
+//                                          16x acquisite frequency.
+//                                          The bit time is about 8.680556us;
+//                                          The system clock is 25ns;
+//                                          The acquisition period is 542.5347ns;
+//                                          For the acquisition period, the counter limit result:
+//                                              22, the actual period is 550ns(round up), error 7.4653ns;
+//                                              21, the actual period is 525ns(round down), error ‭-17.5347‬ns;
+//                                          Then the baudrate signal would be the accumulative error of
+//                                          the 16 times acquisition period error.
+//                          acq index |00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15| 
+//              acq period Method 1   |22|22|22|22|22|22|22|22|22|22|22|22|22|22|22|22| baud period error ‭‭119.4448‬ns Up:Down=16:0
+//              acq period Method 2   |21|21|21|21|21|21|21|21|21|21|21|21|21|21|21|21| baud period error ‭-280.5552‬ns Up:Down=0:16
+//              acq period Method 3   |22|22|22|22|22|22|22|21|22|21|22|21|22|21|22|21| baud period error 5.5559ns Up:Down=11:5
+//              acq period Method 4   |22|22|22|22|22|21|22|21|22|21|22|21|22|21|22|21| baud period error -30.5532ns Up:Down=10:6
+//              Thus, the Method 3 is the best choice. Up:Down = 11:5
 //          Up module:
-//              xxxx.v
+//              UartCore
 //          Sub module:
-//              xxxx.v
+//              None
 // Input Signal List:
-//      1   |   clk         :   clock signal
-//      2   |   rst         :   reset signal
-//      3   |   
+//      1   |   clk                     :   clock signal
+//      2   |   rst                     :   reset signal, negative enable.
+//      3   |   AcqPeriod_i[11:0]       :   The acquisition signal period counting on the system
+//                                          clock signal.
+//      4   |   BitCompensation_i[7:0]  :   Bit compensation give out the compensate method. The 
+//                                          high 4 bits control the number of the period with the 
+//                                          round up counting limit; while the low 4 bits control 
+//                                          the number of the period with the round down counting 
+//                                          limit.
 // Output Signal List:
-//      1   |     
-//  
+//      1   |   AcqSig_o                :   The acquisite signal generated for the RX core;
+//      2   |   BaudSig_o               :   The baudrate signal generated for the TX core;
 // Note:  
 // 
 // -----------------------------------------------------------------------------   
 module BaudrateModule_Simplified(
-    input               clk,            //System input clock signal
-    input               rst,            //System reset signal
+        input               clk,            //System input clock signal
+        input               rst,            //System reset signal
     // The Acquisition Parameter definition
         input   [11:0]  AcqPeriod_i,        //The acquisition period base on the system clk
     // The relationship between Acq and Baudrate

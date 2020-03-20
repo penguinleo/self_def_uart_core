@@ -6,8 +6,8 @@
 // Create   :   2019-10-21 11:37:45
 // Revise   :   2019-10-21 11:37:45
 // Editor   :   sublime text3, tab size (4)
-// Comment  :   the shift register receive the data in the fifo and send out it bit by bit 
-//              at the rhythm from the FSM
+// Comment  :   the shift register receive the data from the fifo and send out it bit by bit 
+//              at the beats from the FSM. This module control the tx wire signal.
 // Input Signal List:
 //      1   :   clk, the system input clock signal, the frequency is greater than 40MHz
 //      2   :   rst, the system reset signal, the module should be reset asynchronously,

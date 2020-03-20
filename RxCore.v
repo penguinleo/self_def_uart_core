@@ -6,18 +6,60 @@
 // Create : 2019-11-17 10:19:33
 // Revise : 2019-11-17 10:19:34
 // Editor : sublime text3, tab size (4)
-// Comment: this module is designed to receive the serial data from rx wire
+// Comment: this module is designed to receive the serial data from rx wire and 
+// 			save the data in the fifo. The module contains 5 submodules.
+// 			the RxCore could adjust the acquisition time in one bit, the acquisite
+// 			point is setted at the middle of the bit.
+// 			The shift register and the byte analyse module are the most complex module.
 //          Up module:
 //              UartCore
 //          Sub module:
-//              ShiftRegister_Rx        Serial to byte module
+//              ShiftRegister_Rx        Serial to byte module. This module acquisites the 
+// 										signal on the rx wire. Acquisition frequency is controlled
+// 										by the AcqSig signal, the acquisition time is defined
+// 										by the AcqNumPerBit.
 //              FIFO_Ver1               Fifo module
-//              FSM_Rx                  State machine of rx core
-//               
+//              FSM_Rx                  State machine of rx core, the state definition is 
+// 										based on the byte structure in the serial protocol.
+// 										INTTERVAL, STARTBIT, DATABITS, PARITYBIT, STOPBIT.
+// 				ParityGenerator 		The parity calculate module
+// 				ByteAnalyseV2			This module get the data acquisited by the ShiftRegister_Rx
+// 										and analyse the data, give out the timestamp, send the data 
+// 										to the fifo.   
 //          Input
-//              clk :   clock signal
-//              rst :   reset signal
+//              clk 						:   clock signal
+//              rst 						:   reset signal
+// 				n_rd_i 						:	the fifo read signal, which is active low. The pulse width should be 1 system clk
+//				n_clr_i 					: 	the control signal to clear the fifo.
+// 				n_rd_frame_fifo_i 			:	the signal to read the frame info register which is active low. the pusle width should be
+// 												1 system clk. When this signal is available, the fifo would fresh with 
+// 												next frame.
+// 				AcqSig_i 					: 	The acquisition signal from the baudrate generate module. This signal drive the shift re-
+// 												-gister to acquisite the signal on the rx wire.
+// 				BaudSig_i 					: 	The baudrate signal is generated from the baudrate generate module, which is synchronized
+// 											    with the AcqSig_i signal.
+// 				p_ParityEnable_i 			: 	The control signal from the CtrlCore. When this signal is high, the parity function in the 
+// 												receive core is enabled, the byte analyse module would check the parity bit.
+// 	  			p_BigEnd_i 					: 	Big end sending, When it is high, that means the bits in the byte would be sent on the tx 
+// 												wire from bit 7 to bit 0, bit by bit. In contrast, the bits would be sent on the wire from 
+// 												bit 0 to bit 7.
+// 				ParityMethod_i 				:   Select the parity method, 0-even,1-odd.
+// 				AcqNumPerBit_i[3:0] 		: 	This register define the divide relationshiop between the AcqSig ang BaudSig. This register 
+// 												define the acquisite time in one bit.
+// 				acqurate_stamp_i[3:0] 		: 	The time stamp(0.1ms) from other module. The equivalent of this data is 0.1ms. The range of 
+// 												data is 0 ~ 9;
+// 				millisecond_stamp_i[11:0] 	:	The time stamp(millisecond) from other module. The equivalent of this data is 1ms. The range
+// 												of this data is 0 ~ 999;
+//				second_stamp_i[31:0]		:   The time stamp(second) from other module. The equivalent of this data is sencond. The range 
+// 												of this data is 0 ~ ‭4294967295‬
+//  			Rx_i 						: 	The rx wire.
 //          Output
+// 				data_o[7:0]					: 	The output port of the receive fifo.
+// 				p_empty_o 					:  	The receive fifo empty signal.
+// 				frame_info_o[27:0]			: 	The time stamp of the frame information. Containing the frame bytes' number, the last byte
+// 												millisecond_stamp and acqurate_stamp information.
+// 				ParityErrorNum_o[7:0] 		:   Giving out the parit error number in this rx core. The data with parity error would not be 
+// 												sent into the fifo, instead the number in this counter would increase.
 //              
 // -----------------------------------------------------------------------------
 module RxCore(
@@ -26,6 +68,7 @@ module RxCore(
     // fifo control signal
         output [7:0]    data_o,
         input           n_rd_i,     // the fifo read signal
+        input           n_clr_i,	// empty the fifo
         output          p_empty_o,  // the fifo is empty
     // frame info rd control
     	input 			n_rd_frame_fifo_i,
@@ -135,6 +178,7 @@ module RxCore(
         .data_i(Data_w),
         .n_we_i(n_we_w),
         .n_re_i(n_rd_i),
+        .n_clr_i(n_clr_i),
         .data_o(data_o),
         .p_empty_o(p_empty_o),
         .p_full_o(p_full_w)

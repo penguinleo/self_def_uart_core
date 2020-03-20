@@ -10,12 +10,13 @@
 //              IP core from the microsemi
 // 
 // Input Signal List:
-//      1   :   clk, the system input clock signal, the frequency is greater than 40MHz
-//      2   :   rst, the system reset signal, the module should be reset asynchronously,
-//                   and must be released synchronously with the clock;
+//      1   :   clk,    the system input clock signal, the frequency is greater than 40MHz
+//      2   :   rst,    the system reset signal, the module should be reset asynchronously,
+//                      and must be released synchronously with the clock;
 //      3   :   data_i, the data input 
-//      4   :   we_i,   write signal
-//      5   :   re_i,   read signal
+//      4   :   n_we_i, write signal
+//      5   :   n_re_i, read signal
+//      6   :   n_clr_i,the fifo clear signal, it is a synchronouse signal.
 // Output Signal List:
 //      1   :   data_o, the data output
 //      2   :   empty_o,  the fifo empty signal
@@ -31,6 +32,7 @@ module  FIFO_ver1
     input [7:0]     data_i,
     input           n_we_i,
     input           n_re_i,
+    input           n_clr_i,
     output [7:0]    data_o,
     output          p_empty_o,
     output          p_full_o
@@ -56,7 +58,7 @@ module  FIFO_ver1
         assign data_o       = output_data_r;
     // the write pointer fresh
         always @(posedge clk or negedge rst) begin
-            if (!rst) begin
+            if (!rst || !n_clr_i) begin
                 pointer_wr_r <= 8'd0;                
             end
             else if ((n_we_i == 1'b0) && (p_full_w == 1'b0)) begin
@@ -68,7 +70,7 @@ module  FIFO_ver1
         end
     // the next write pointer fresh
         always @(posedge clk or negedge rst) begin
-            if (!rst) begin
+            if (!rst || !n_clr_i) begin
                 next_pointer_wr_r <= 8'd1;                
             end
             else if ((n_we_i == 1'b0) && (p_full_w == 1'b0)) begin
@@ -85,7 +87,7 @@ module  FIFO_ver1
         end
     // the read pointer fresh
         always @(posedge clk or negedge rst) begin
-            if (!rst) begin
+            if (!rst || !n_clr_i) begin
                 pointer_rd_r <= 8'd0;                
             end
             else if ((n_re_i == 1'b0) && (p_empty_w == 1'b0)) begin
@@ -111,7 +113,7 @@ module  FIFO_ver1
         end
     // output buffer
         always @(posedge clk or negedge rst) begin
-            if (!rst) begin
+            if (!rst || !n_clr_i) begin
                 output_data_r <= 8'd0;                
             end
             else if ((n_re_i == 1'b0) && (p_empty_w == 1'b0)) begin

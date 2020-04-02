@@ -6,18 +6,42 @@
 // Create : 2019-12-17 15:19:59
 // Revise : 2019-12-17 15:19:59
 // Editor : sublime text3, tab size (4)
-// Comment: this module is designed to ...
+// Comment: this module is designed to control the uart port.
+//          The uart module is designed a compensate method to implement an acqurate bit width
+//          I call this method acquisite period compensate method.
+//          In further, the bit width compensate method would be introduced to reduce the accumulate
+//          error in the last bit of a byte during transmitte.
 //          Up module:
-//              xxxx.v
+//              UartCore
 //          Sub module:
-//              xxxx.v
+//              None
 // Input Signal List:
-//      1   |   clk         :   clock signal
-//      2   |   rst         :   reset signal
-//      3   |   
-// Output Signal List:
-//      1   |     
-//  
+//      1   |   clk                 :   clock signal
+//      2   |   rst                 :   reset signal
+//      3   |   p_We_i              :   control register write enable signal, positive effective.
+//      4   |   CtrlReg1_i          :   Control parameter register,
+//                                      Bit 7 controls the big end or little end format;
+//                                      Bit 6 controls the parity function, 1-enable,0-disable;
+//                                      Bit 5 choose the parity method, 0-even,1-odd;
+//                                      Bit 4 reserved bit;
+//                                      Bit 3 ~ 0 are the high 4 bits of acquisite period control reg;
+//      5   |   CtrlReg2_i          :   This byte is the low 8 bits of the acquisite period control reg;
+//      6   |   CtrlReg3_i          :   Compensation control register
+//                                      Bit 7 ~ 4 are the number of round-up acquisite period in a bit time;
+//                                      Bit 3 ~ 0 are the number of round-down period in a bit time;
+//                                      The acquisite period control reg is the round-down period data.
+// Output Signal List:      
+//      1   |   AcqPeriod_o         :   The acquisite perid control register output. This period is the round-down
+//                                      period. This data is sent to the BaudGenerate module to generate the AcqSig
+//      2   |   BitCompensation_o   :   The compensate control register, which would help the BaudGenerate module
+//                                      reduce the bit width error less than a system clk;
+//                                      Bit 7 ~ 4 are the number of round-up acquisite period in a bit time
+//                                      Bit 3 ~ 0 are the number of round-down acquisite period in a bit time
+//      3   |   AcqNumPerBit_o      :   The number to acquisite opperation in a bit time. This data is the sum of
+//                                      the BitCompensation_o[7:4] + BitCompensation_o[3:0]
+//      4   |   p_ParityEnable_o    :   The parity enable signal output for other uart submodules, 1-enable,0-disable;
+//      5   |   p_BigEnd_o          :   The format control signal output for other uart submodules, 0-even,1-odd;
+//      6   |   ParityMethod_o      :   The parity method select signal output for other uart submodule, 0-even,1-odd;
 // Note:  
 // 
 // -----------------------------------------------------------------------------   

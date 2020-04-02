@@ -47,6 +47,8 @@ module TxCore(
         input           p_ParityEnable_i,
         input           p_BigEnd_i,
         input           ParityMethod_i,
+    // the interface for the AnsDelayTimeMeasure module
+        output          p_SendFinished_o,
     // the tx signal
         output          Tx_o
     );
@@ -61,6 +63,20 @@ module TxCore(
         wire            ParityResult_w;
         wire            p_FiFoEmpty_w;
         wire            n_FifoRe_w;
+        wire            p_SendFinished_w;
+    // parameter 
+        // state machine definition
+            parameter INTERVAL  = 5'b0_0001;
+            parameter STARTBIT  = 5'b0_0010;
+            parameter DATABITS  = 5'b0_0100;
+            parameter PARITYBIT = 5'b0_1000;
+            parameter STOPBIT   = 5'b1_0000;
+        // fifo state definition
+            parameter EMPTY     = 1'b1;
+            parameter NONEMPTY  = 1'b0;
+    // logic definition
+        assign p_SendFinished_w = (State_w == STOPBIT) && (p_FiFoEmpty_w == EMPTY) && (p_BaudSig_i == 1'b1);
+        assign p_SendFinished_o = p_SendFinished_w;
     FSM StateMachine(
         .clk(clk),
         .rst(rst),

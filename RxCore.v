@@ -89,6 +89,8 @@ module RxCore(
     	output  [7:0]   ParityErrorNum_o,
         // output           p_BaudrateError_o,  // the Baudrate error
         // output           p_ParityError_o,    // the Parity error
+    // the interface with the AnsDelayTimeMeasure module
+    	output 		   	p_DataReceived_o,
     // the rx signal
         input           Rx_i            
     );
@@ -108,7 +110,17 @@ module RxCore(
         wire [7:0]	ParityData_w;
         wire        n_we_w;
         wire        p_full_w;
-        
+        wire 		p_DataReceived_w;
+    // parameter
+    	// state machine definition
+        	parameter INTERVAL  = 5'b0_0001;
+            parameter STARTBIT  = 5'b0_0010;
+            parameter DATABITS  = 5'b0_0100;
+            parameter PARITYBIT = 5'b0_1000;
+            parameter STOPBIT   = 5'b1_0000;
+    // logic definition
+    	assign p_DataReceived_w = Byte_Synch_w;
+    	assign p_DataReceived_o = p_DataReceived_w;
     FSM_Rx StateMachine(
         .clk(clk),
         .rst(rst),

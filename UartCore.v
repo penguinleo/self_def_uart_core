@@ -58,6 +58,7 @@ module UartCore(
     // frame info 
         input           n_rd_frame_fifo_i,
         output [27:0]   frame_info_o,
+        output [15:0]   ans_delay_o,
     // rx fifo control signal
         output [7:0]    data_o,
         input           n_rd_i,     // the fifo read signal
@@ -67,6 +68,7 @@ module UartCore(
         input           n_we_i,
         output          p_full_o,
     // time stamp input
+        input           p_sig_10MHz_i,
         input [3:0]     acqurate_stamp_i,
         input [11:0]    millisecond_stamp_i,
         input [31:0]    second_stamp_i,     
@@ -85,6 +87,8 @@ module UartCore(
     wire        ParityMethod_w; 
     wire        AcqSig_w;
     wire        BaudSig_w;
+    wire        p_SendFinished_w;
+    wire        p_DataReceived_w;
 
     CtrlCore ControlCore(
         .clk(clk),
@@ -129,6 +133,7 @@ module UartCore(
         .millisecond_stamp_i(millisecond_stamp_i),
         .second_stamp_i(second_stamp_i),
         .ParityErrorNum_o(ParityErrorNum_o),
+        .p_DataReceived_o(p_DataReceived_w),
         // .p_BaudrateError_o(),
         // .p_ParityError_o(),
         .Rx_i(Rx_i)
@@ -145,7 +150,19 @@ module UartCore(
         .p_ParityEnable_i(p_ParityEnable_w),
         .p_BigEnd_i(p_BigEnd_w),
         .ParityMethod_i(ParityMethod_w),
+        .p_SendFinished_o(p_SendFinished_w),
         .Tx_o(Tx_o) 
+    );
+
+    AnsDelayTimeMeasure AnsDlyMea(
+        .clk(clk),
+        .rst(rst),
+        .p_SendFinished_i(p_SendFinished_w),
+        .p_DataReceived_i(p_DataReceived_w),
+        .p_sig_10MHz_i(p_sig_10MHz_i),
+        .n_rd_i(n_rd_frame_fifo_i),
+        .n_clr_i(n_clr_i),
+        .ans_delay_o(ans_delay_o)
     );
 
 

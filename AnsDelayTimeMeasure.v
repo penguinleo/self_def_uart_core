@@ -52,8 +52,8 @@ module AnsDelayTimeMeasure(
 		parameter 	FLAG_1 			= 1'b1;
 		parameter 	FLAG_0			= 1'b0;
 	// logic definition
-		assign p_over_limit_w 	= (delay_cnt_r >= ans_delay_limit_i);
-		assign p_over_max_w 	= (ans_delay_info1_r >= MAX_DLY_TIME);
+		// assign p_over_limit_w 	= (delay_cnt_r >= ans_delay_limit_i);
+		assign p_over_max_w 	= (delay_cnt_r >= MAX_DLY_TIME);
 		assign ans_delay_o 		= ans_delay_time_r;
 	// the interval flag
 		always @(posedge clk or negedge rst) begin
@@ -108,7 +108,7 @@ module AnsDelayTimeMeasure(
 				ans_delay_time4_r <= 16'd0;				
 			end
 			else if ((p_DataReceived_i == 1'b1) && (flag_tx_rx_interval_r == FLAG_1)) begin // receive 
-				case(info_num_r):
+				case(info_num_r)
 					4'd0: begin
 						ans_delay_time1_r <= delay_cnt_r;
 						ans_delay_time2_r <= 16'd0;
@@ -145,6 +145,7 @@ module AnsDelayTimeMeasure(
 						ans_delay_time3_r <= ans_delay_time4_r;
 						ans_delay_time4_r <= delay_cnt_r;
 					end
+				endcase
 			end
 			else if (n_rd_i == 1'b0) begin // read info
 				ans_delay_time1_r <= ans_delay_time2_r;
@@ -162,7 +163,7 @@ module AnsDelayTimeMeasure(
 	 			info_num_r <= 4'd0;
 	 		end
 	 		else begin
-	 			case(info_num_r):
+	 			case(info_num_r)
 	 				4'd0: begin
 	 					if ((p_DataReceived_i == 1'b1) && (flag_tx_rx_interval_r == FLAG_1)) begin
 	 						info_num_r <= 4'd1;
@@ -215,6 +216,7 @@ module AnsDelayTimeMeasure(
 	 				default: begin
 	 					info_num_r <= 4'd4;
 	 				end
+	 			endcase
 	 		end
 	 	end
 	// 

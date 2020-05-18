@@ -34,6 +34,7 @@ module  FIFO_ver1
     input           n_re_i,
     input           n_clr_i,
     output [7:0]    data_o,
+    output [15:0]   bytes_in_fifo_o,
     output          p_empty_o,
     output          p_full_o
     );
@@ -45,6 +46,7 @@ module  FIFO_ver1
         reg         p_empty_r;
         reg         p_full_r;
         reg [7:0]   output_data_r;
+        reg [15:0]  bytes_in_fifo_r;        // the number of the bytes in fifo
     // wire definition
         wire        p_full_w;
         wire        p_empty_w;
@@ -56,6 +58,7 @@ module  FIFO_ver1
         assign p_empty_o    = p_empty_w;
         assign p_full_o     = p_full_w;
         assign data_o       = output_data_r;
+        ass
     // the write pointer fresh
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin
@@ -83,6 +86,27 @@ module  FIFO_ver1
             end
             else begin
                 next_pointer_wr_r <= next_pointer_wr_r;
+            end
+        end
+    // the bytes in fifo register fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst || !n_clr_i) begin
+                bytes_in_fifo_r <= 16'd0;              
+            end
+            else if (p_empty_w == 1'b1) begin
+                bytes_in_fifo_r <= 16'd0;
+            end
+            else if (p_full_w == 1'b1) begin
+                bytes_in_fifo_r <= DEPTH;
+            end
+            else if ((n_re_i == 1'b0)) begin
+                bytes_in_fifo_r <= bytes_in_fifo_r - 1'b1;
+            end
+            else if ((n_we_i == 1'b0)) begin
+                bytes_in_fifo_r <= bytes_in_fifo_r + 1'b1;
+            end
+            else begin
+                bytes_in_fifo_r <= bytes_in_fifo_r;
             end
         end
     // the read pointer fresh

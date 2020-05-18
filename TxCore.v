@@ -41,6 +41,7 @@ module TxCore(
         input       n_we_i,
         input       n_clr_i,
         output      p_full_o,
+        output [15:0] bytes_in_fifo_o,
     // the baudsig from the baudrate module
         input           p_BaudSig_i,
     // the tx core control signal
@@ -123,6 +124,7 @@ module TxCore(
         .n_re_i(n_FifoRe_w),
         .n_clr_i(n_clr_i),
         .data_o(FifoData_w),
+        .bytes_in_fifo_o(bytes_in_fifo_o),
         .p_empty_o(p_FiFoEmpty_w),
         .p_full_o(p_full_o)
         );

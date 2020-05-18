@@ -70,6 +70,7 @@ module RxCore(
         input           n_rd_i,     // the fifo read signal
         input           n_clr_i,	// empty the fifo
         output          p_empty_o,  // the fifo is empty
+        output [15:0]   bytes_in_fifo_o,
     // frame info rd control
     	input 			n_rd_frame_fifo_i,
     	output [27:0]	frame_info_o,
@@ -192,6 +193,7 @@ module RxCore(
         .n_re_i(n_rd_i),
         .n_clr_i(n_clr_i),
         .data_o(data_o),
+        .bytes_in_fifo_o(bytes_in_fifo_o),
         .p_empty_o(p_empty_o),
         .p_full_o(p_full_w)
         );

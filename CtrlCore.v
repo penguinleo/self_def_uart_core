@@ -25,13 +25,12 @@
 //                                      Bit 5 choose the parity method, 0-even,1-odd;
 //                                      Bit 4 reserved bit;
 //                                      Bit 3 ~ 0 are the high 4 bits of acquisite period control reg;
-//      5   |   CtrlReg2_i          :   This byte is the low 8 bits of the acquisite period control reg;
-//      6   |   CtrlReg3_i          :   Compensation control register
+//      6   |   BitCompensateMethod :   Compensation control register
 //                                      Bit 7 ~ 4 are the number of round-up acquisite period in a bit time;
 //                                      Bit 3 ~ 0 are the number of round-down period in a bit time;
 //                                      The acquisite period control reg is the round-down period data.
 // Output Signal List:      
-//      1   |   AcqPeriod_o         :   The acquisite perid control register output. This period is the round-down
+//      1   |   BaudRateGen_o         :   The acquisite perid control register output. This period is the round-down
 //                                      period. This data is sent to the BaudGenerate module to generate the AcqSig
 //      2   |   BitCompensation_o   :   The compensate control register, which would help the BaudGenerate module
 //                                      reduce the bit width error less than a system clk;
@@ -51,11 +50,16 @@ module CtrlCore(
     // write enable
         input           p_We_i,
     // input control register
-        input [7:0]     CtrlReg1_i,
-        input [7:0]     CtrlReg2_i,
-        input [7:0]     CtrlReg3_i,
+        input [7:0]     EnCodeCtrl_i,
+        input [7:0]     BaudRateGenHigh_i,
+        input [7:0]     BaudRateGenLow_i,
+        input [7:0]     BitCompensateMethod,
+    // interupte control register
+        input [7:0]     InterrputCtrl_i,
+        input [7:0]     FifoInterrputNumHigh_i,
+        input [7:0]     FifoInterrputNumLow_i,
     // output control register
-        output [11:0]   AcqPeriod_o,
+        output [15:0]   BaudRateGen_o,
         output [7:0]    BitCompensation_o,
         output [3:0]    AcqNumPerBit_o,
     // output protocol control register
@@ -64,7 +68,7 @@ module CtrlCore(
         output          ParityMethod_o
     );
     // register 
-        reg [11:0]  AcqPeriod_r;
+        reg [15:0]  BaudRateGen_r;
         reg [7:0]   BitCompensation_r;
         reg         p_ParityEnable_r;
         reg         p_BigEnd_r;
@@ -72,7 +76,7 @@ module CtrlCore(
         reg [3:0]   AcqNumPerBit_r;
     // parameter
         // Default parameter
-            parameter       DEFAULT_PERIOD      = 12'd20;
+            parameter       DEFAULT_PERIOD      = 16'd20;
             parameter       DEFAULT_UP_TIME     = 4'd10;
             parameter       DEFAULT_DOWN_TIME   = 4'd5;
         // Parity Enable definition
@@ -85,7 +89,7 @@ module CtrlCore(
             parameter EVEN      = 1'b0;
             parameter ODD       = 1'b1;
     // assign
-        assign AcqPeriod_o          = AcqPeriod_r;
+        assign BaudRateGen_o        = BaudRateGen_r;
         assign BitCompensation_o    = BitCompensation_r;
         assign p_ParityEnable_o     = p_ParityEnable_r;
         assign p_BigEnd_o           = p_BigEnd_r;
@@ -93,7 +97,7 @@ module CtrlCore(
         assign AcqNumPerBit_o       = AcqNumPerBit_r;
     always @(posedge clk or negedge rst) begin
         if (!rst) begin
-            AcqPeriod_r         <= DEFAULT_PERIOD;
+            BaudRateGen_r       <= DEFAULT_PERIOD;
             BitCompensation_r   <= {DEFAULT_UP_TIME,DEFAULT_DOWN_TIME};
             p_ParityEnable_r    <= ENABLE;
             p_BigEnd_r          <= LITTLEEND;
@@ -101,15 +105,15 @@ module CtrlCore(
             AcqNumPerBit_r      <= DEFAULT_UP_TIME + DEFAULT_DOWN_TIME;      
         end
         else if (p_We_i == 1'b1) begin
-            AcqPeriod_r         <= {CtrlReg1_i[3:0],CtrlReg2_i};
-            BitCompensation_r   <= CtrlReg3_i;
-            p_ParityEnable_r    <= CtrlReg1_i[6];
-            p_BigEnd_r          <= CtrlReg1_i[7];
-            ParityMethod_r      <= CtrlReg1_i[5];
-            AcqNumPerBit_r      <= CtrlReg3_i[7:4] + CtrlReg3_i[3:0];
+            BaudRateGen_r       <= {BaudRateGenHigh_i,BaudRateGenLow_i};
+            BitCompensation_r   <= BitCompensateMethod;
+            p_ParityEnable_r    <= EnCodeCtrl_i[6];
+            p_BigEnd_r          <= EnCodeCtrl_i[7];
+            ParityMethod_r      <= EnCodeCtrl_i[5];
+            AcqNumPerBit_r      <= BitCompensateMethod[7:4] + BitCompensateMethod[3:0];
         end
         else begin
-            AcqPeriod_r         <= AcqPeriod_r;
+            BaudRateGen_r       <= BaudRateGen_r;
             BitCompensation_r   <= BitCompensation_r;
             p_ParityEnable_r    <= p_ParityEnable_r;
             p_BigEnd_r          <= p_BigEnd_r;

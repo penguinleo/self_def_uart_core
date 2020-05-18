@@ -82,6 +82,7 @@ module UartCore(
     wire [11:0] AcqPeriod_w;
     wire [7:0]  BitCompensation_w;
     wire [3:0]  AcqNumPerBit_w;
+    wire [15:0] BytesInFifo_w;
     wire        p_ParityEnable_w;
     wire        p_BigEnd_w;
     wire        ParityMethod_w; 
@@ -121,6 +122,7 @@ module UartCore(
         .n_rd_i(n_rd_i),
         .n_clr_i(n_clr_i),
         .p_empty_o(p_empty_o),
+        .bytes_in_fifo_o(BytesInFifo_w),
         .n_rd_frame_fifo_i(n_rd_frame_fifo_i),
         .frame_info_o(frame_info_o),
         .AcqSig_i(AcqSig_w),
@@ -146,6 +148,7 @@ module UartCore(
         .n_we_i(n_we_i),
         .n_clr_i(n_clr_i),
         .p_full_o(p_full_o),
+        .bytes_in_fifo_o(),
         .p_BaudSig_i(BaudSig_w),
         .p_ParityEnable_i(p_ParityEnable_w),
         .p_BigEnd_i(p_BigEnd_w),

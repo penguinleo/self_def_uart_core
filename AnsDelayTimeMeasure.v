@@ -10,7 +10,7 @@
 // 			module using a counter to measure the interval time between the tx port and 
 // 			rx port. From the last byte Stop bit of tx port to the First byte Start bit or Stop Bit
 // 			of the rx port.
-// 			The ans delay is depended on the acquisite signal, which is N times of the baudrate sig.
+// 			The acurate of the data is 0.1ms.
 // 			
 // Input Signal List:
 // 		1	:	clk, the system input clock signal, the frequency is greater than 40MHz

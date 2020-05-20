@@ -54,27 +54,44 @@ module CtrlCore(
         input [15:0]    BaudRateGen_i,          // Acqsignal divider control input(round down)
         input [7:0]     BitCompensateMethod_i,  // Baudrate sigal divider
     // interupte control register
-        input [15:0]    InterrputEnable_i,      // Interrupt enbal bit
-        input [15:0]    InterruptMask_i,        // Interrupt mask bit     
+        input [15:0]    InterrputEnable_i,      // Interrupt enable bit write-only
+        input [15:0]    InterruptDisable_i,     // Interrupt disable bit write-only
+        input [15:0]    InterruptState_i,       // Interrupt status clear control(write direction)
         input [15:0]    RxFIFOTriggerLevel_i,   // The Rx fifo trigger interrupt level
         input [15:0]    TxFIFOTriggerLevel_i,   // The Tx fifo trigger interrupt level
     // output control register
-        output [7:0]    ModeCtrl_o,
+        output [7:0]    ModeCtrl_o,             // UART mode control register
         output [15:0]   BaudRateGen_o,
         output [7:0]    BitCompensateMethod_o,
     // output interrupt state register
-        output [15:0]   InterrputEnable_o,
-        output [15:0]   InterruptMask_o,  
-        output [15:0]   InterruptState_o,
-        output [15:0]   UartState_o,
+        output [15:0]   InterruptMask_o,        // interrupt mask status read-only
+        output [15:0]   InterruptState_o,       // interrupt status output(read direction)
+        output [15:0]   UartState_o,            // read only
     // output protocol control register
         output [3:0]    AcqNumPerBit_o,
         output          p_ParityEnable_o,
         output          p_BigEnd_o,
         output          ParityMethod_o
     );
-    // Register definition
-        reg [15:0]  BaudRateGen_r;
+    // Register definition //trip-mode
+        reg [7:0]   ModeCtrl_r1/*synthesis syn_preserve = 1*/;
+        reg [7:0]   ModeCtrl_r2/*synthesis syn_preserve = 1*/;
+        reg [7:0]   ModeCtrl_r3/*synthesis syn_preserve = 1*/;
+        reg [15:0]  BaudRateGen_r1/*synthesis syn_preserve = 1*/;
+        reg [15:0]  BaudRateGen_r2/*synthesis syn_preserve = 1*/;
+        reg [15:0]  BaudRateGen_r3/*synthesis syn_preserve = 1*/;
+        reg [7:0]   BitCompensateMethod_r1/*synthesis syn_preserve = 1*/;        
+        reg [7:0]   BitCompensateMethod_r2/*synthesis syn_preserve = 1*/;
+        reg [7:0]   BitCompensateMethod_r3/*synthesis syn_preserve = 1*/;         
+        reg [15:0]  InterruptMask_r1/*synthesis syn_preserve = 1*/;
+        reg [15:0]  InterruptMask_r2/*synthesis syn_preserve = 1*/;
+        reg [15:0]  InterruptMask_r3/*synthesis syn_preserve = 1*/; 
+        reg [15:0]  InterruptState_r1/*synthesis syn_preserve = 1*/;
+        reg [15:0]  InterruptState_r2/*synthesis syn_preserve = 1*/;
+        reg [15:0]  InterruptState_r3/*synthesis syn_preserve = 1*/; 
+        reg [15:0]  UartState_r1/*synthesis syn_preserve = 1*/;
+        reg [15:0]  UartState_r2/*synthesis syn_preserve = 1*/;
+        reg [15:0]  UartState_r3/*synthesis syn_preserve = 1*/;       
         reg [7:0]   BitCompensation_r;
         reg         p_ParityEnable_r;
         reg         p_BigEnd_r;

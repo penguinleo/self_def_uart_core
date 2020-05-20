@@ -57,7 +57,8 @@ module BaudrateModule(
             wire            AcqRising_w; 
             wire            BaudRising_w;
         // The bit type choosing a properial compensation method according to the left bit number in the byte 
-            wire            BitType_w;
+            wire            BitType_w;              // the data bit compensation type
+            wire            InputBitType_w;         // the start bit compensation type.
         // The input data
             wire    [3:0]   PosBitsNum_w;           // the number of bits using positive compensation method in the byte
             wire    [3:0]   NegBitsNum_w;           // the number of bits using negative compensation method in the byte
@@ -65,7 +66,7 @@ module BaudrateModule(
             wire    [3:0]   PosCompAcqNum_w;        // the positive compensation method compensated acquisition point number in a bit
             wire    [3:0]   NegNormAcqNum_w;        // the negative compensation method normal acquisition point number in a bit
             wire    [3:0]   NegCompAcqNum_w;        // the negative compensation method compensated acquisition point number in a bit
-            wire            InputBitType_w;         // the start bit compensation type.
+            
     // Parameter definition
         // Byte width
             parameter       BYTEWIDTH   = 4'd10;       // the second compensated method define a byte width 

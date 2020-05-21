@@ -47,57 +47,51 @@
 module CtrlCore(
     input   clk,
     input   rst,
-    // write enable
-        input           p_We_i,
-    // input control register
-        input [7:0]     ModeCtrl_i,             // mode control and encode control input
-        input [15:0]    BaudRateGen_i,          // Acqsignal divider control input(round down)
-        input [7:0]     BitCompensateMethod_i,  // Baudrate sigal divider
-    // interupte control register
-        input [15:0]    InterrputEnable_i,      // Interrupt enable bit write-only
-        input [15:0]    InterruptDisable_i,     // Interrupt disable bit write-only
-        input [15:0]    InterruptState_i,       // Interrupt status clear control(write direction)
-        input [15:0]    RxFIFOTriggerLevel_i,   // The Rx fifo trigger interrupt level
-        input [15:0]    TxFIFOTriggerLevel_i,   // The Tx fifo trigger interrupt level
-    // output control register
-        output [7:0]    ModeCtrl_o,             // UART mode control register
-        output [15:0]   BaudRateGen_o,
-        output [7:0]    BitCompensateMethod_o,
-    // output interrupt state register
-        output [15:0]   InterruptMask_o,        // interrupt mask status read-only
-        output [15:0]   InterruptState_o,       // interrupt status output(read direction)
-        output [15:0]   UartState_o,            // read only
-    // output protocol control register
+    // The address bus 
+        input [2:0]     AddrBus_i,              // the input address bus
+        input           n_ChipSelect_i,         // the chip select signal
+        input           n_rd_i,                 // operation direction control signal read direction, negative enable
+        input           n_we_i,                 // operation direction control signal write direction, negative enable
+        input [7:0]     DataBus_i,              // data bus input direction
+        output [7:0]    DataBus_o,
+    // baudrate module interface
+
+    // tx module interface
+
+    // rx module interface
+        // error signal
+            input           p_RxParityErr_i,        // RX parity check fail, positive error occur
+            input           p_RxFrameErr_i,         // Rx stop bit missing, positive error occur
+        // fifo control signal
+            input [7:0]     RxData_i,               // Rx Fifo read port
+            input           p_RxFIFO_Empty_i,       // Rx Fifo empty, status signal, positive enable
+            output          n_RxFIFO_Rd_o,          // Rx Fifo read control signal, negative enable
+            output          n_RxFIFO_Clr_o,         // Rx Fifo clear signal
+            input [15:0]    n_RxFIFO_Level_i,       // Rx Fifo bytes in fifo
+        // extend function signal(Data link level)
+            output          p_RxFrame_Func_En_o,    // Data link level protocol function enable control
+            input [27:0]    RxFrameInfo_i,          // Data link level protocol function extension
+            input           p_RxFrame_Empty_i,      // No Received frame
+            output          n_RxFrameInfo_Rd_o,     // Read frame informatoin control signal, negative enable
+            
+    // Rx & Tx encode control control output
         output [3:0]    AcqNumPerBit_o,
         output          p_ParityEnable_o,
         output          p_BigEnd_o,
         output          ParityMethod_o
     );
-    // Register definition //trip-mode
-        reg [7:0]   ModeCtrl_r1/*synthesis syn_preserve = 1*/;
-        reg [7:0]   ModeCtrl_r2/*synthesis syn_preserve = 1*/;
-        reg [7:0]   ModeCtrl_r3/*synthesis syn_preserve = 1*/;
-        reg [15:0]  BaudRateGen_r1/*synthesis syn_preserve = 1*/;
-        reg [15:0]  BaudRateGen_r2/*synthesis syn_preserve = 1*/;
-        reg [15:0]  BaudRateGen_r3/*synthesis syn_preserve = 1*/;
-        reg [7:0]   BitCompensateMethod_r1/*synthesis syn_preserve = 1*/;        
-        reg [7:0]   BitCompensateMethod_r2/*synthesis syn_preserve = 1*/;
-        reg [7:0]   BitCompensateMethod_r3/*synthesis syn_preserve = 1*/;         
-        reg [15:0]  InterruptMask_r1/*synthesis syn_preserve = 1*/;
-        reg [15:0]  InterruptMask_r2/*synthesis syn_preserve = 1*/;
-        reg [15:0]  InterruptMask_r3/*synthesis syn_preserve = 1*/; 
-        reg [15:0]  InterruptState_r1/*synthesis syn_preserve = 1*/;
-        reg [15:0]  InterruptState_r2/*synthesis syn_preserve = 1*/;
-        reg [15:0]  InterruptState_r3/*synthesis syn_preserve = 1*/; 
-        reg [15:0]  UartState_r1/*synthesis syn_preserve = 1*/;
-        reg [15:0]  UartState_r2/*synthesis syn_preserve = 1*/;
-        reg [15:0]  UartState_r3/*synthesis syn_preserve = 1*/;       
-        reg [7:0]   BitCompensation_r;
-        reg         p_ParityEnable_r;
-        reg         p_BigEnd_r;
-        reg         ParityMethod_r;
+    // Register definition //trip-modesynthesis syn_preserve=1
+        reg [7:0]   UartControl_r1              /*synthesis syn_preserve = 1*/;  // W module control
+        reg [7:0]   UartMode_r1                 /*synthesis syn_preserve = 1*/;  // R/W mode  
+        reg [15:0]  BaudRateGen_r1              /*synthesis syn_preserve = 1*/;  // R/W the acquisite signal divide from the the system clock signal
+        reg [7:0]   BitCompensateMethod_r1      /*synthesis syn_preserve = 1*/;  // R/W round up and down acquisition period, the sum of this two is the divider of acquisite signal and baud signal    
+        reg [15:0]  InterrputEnable_r1          /*synthesis syn_preserve = 1*/;  // W   interrupt enable and disable control
+        reg [15:0]  InterruptMask_r1            /*synthesis syn_preserve = 1*/;  // R the interrupt enable signal controlled 
+        reg [15:0]  InterruptState_r1           /*synthesis syn_preserve = 1*/;  // R/W the interrupt signal and clear control register 
+        reg [15:0]  UartState_r1                /*synthesis syn_preserve = 1*/;  // R the uart state register
+        
+    //
         reg [3:0]   AcqNumPerBit_r;
-        reg [3:0]   UartMode_r;
     // Logic definition
 
     // parameter

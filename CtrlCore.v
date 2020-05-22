@@ -48,26 +48,36 @@ module CtrlCore(
     input   clk,
     input   rst,
     // The address bus 
-        input [2:0]     AddrBus_i,              // the input address bus
-        input           n_ChipSelect_i,         // the chip select signal
-        input           n_rd_i,                 // operation direction control signal read direction, negative enable
-        input           n_we_i,                 // operation direction control signal write direction, negative enable
-        input [7:0]     DataBus_i,              // data bus input direction
-        output [7:0]    DataBus_o,
+        input  [2:0]    AddrBus_i,                  // the input address bus
+        input           n_ChipSelect_i,             // the chip select signal
+        input           n_rd_i,                     // operation direction control signal read direction, negative enable
+        input           n_we_i,                     // operation direction control signal write direction, negative enable
+        input  [7:0]    DataBus_i,                  // data bus input direction write data into the registers
+        output [7:0]    DataBus_o,                  // data bus output direction read data from the registers
     // baudrate module interface
-
+        output [15:0]   BaudRateGen_o,              // The divider data for the acquisite period
+        output [3:0]    RoundUpNum_o,               // The compensate method high 4 bits, round up acquisite period
+        output [3:0]    RoundDownNum_o,             // The compensate method low 4 bits, round down acquisite period
+        output [3:0]    AcqNumPerBit_o,             // The divider for the baudrate signal and the acquisite signal
     // tx module interface
-
+        output          p_TxCoreEn_o,               // The Tx core enable signal. Positive effective 
+        // fifo control signal
+            output [7:0]    TxData_o,               // Tx Fifo write data port
+            input           p_TxFIFO_Full_i,        // Tx Fifo full signal, positive the fifo full
+            output          n_TxFIFO_We_o,          // Tx Fifo write control singal, negative effective
+            output          n_TxFIFO_Clr_o,         // Tx Fifo clear signal, negative effective
+            input [15:0]    TxFIFO_Level_i,         // The bytes number in the Tx fifo 
     // rx module interface
+        output          p_RxCoreEn_o,               //The Rx core enable signal. Positive effective
         // error signal
             input           p_RxParityErr_i,        // RX parity check fail, positive error occur
             input           p_RxFrameErr_i,         // Rx stop bit missing, positive error occur
         // fifo control signal
             input [7:0]     RxData_i,               // Rx Fifo read port
-            input           p_RxFIFO_Empty_i,       // Rx Fifo empty, status signal, positive enable
-            output          n_RxFIFO_Rd_o,          // Rx Fifo read control signal, negative enable
+            input           p_RxFIFO_Empty_i,       // Rx Fifo empty, status signal, positive effective
+            output          n_RxFIFO_Rd_o,          // Rx Fifo read control signal, negative effective
             output          n_RxFIFO_Clr_o,         // Rx Fifo clear signal
-            input [15:0]    n_RxFIFO_Level_i,       // Rx Fifo bytes in fifo
+            input [15:0]    RxFIFO_Level_i,         // bytes number in the Rx fifo
         // extend function signal(Data link level)
             output          p_RxFrame_Func_En_o,    // Data link level protocol function enable control
             input [27:0]    RxFrameInfo_i,          // Data link level protocol function extension
@@ -75,7 +85,6 @@ module CtrlCore(
             output          n_RxFrameInfo_Rd_o,     // Read frame informatoin control signal, negative enable
             
     // Rx & Tx encode control control output
-        output [3:0]    AcqNumPerBit_o,
         output          p_ParityEnable_o,
         output          p_BigEnd_o,
         output          ParityMethod_o
@@ -89,28 +98,36 @@ module CtrlCore(
         reg [15:0]  InterruptMask_r1            /*synthesis syn_preserve = 1*/;  // R the interrupt enable signal controlled 
         reg [15:0]  InterruptState_r1           /*synthesis syn_preserve = 1*/;  // R/W the interrupt signal and clear control register 
         reg [15:0]  UartState_r1                /*synthesis syn_preserve = 1*/;  // R the uart state register
-        
     //
         reg [3:0]   AcqNumPerBit_r;
     // Logic definition
 
     // parameter
-        // Default parameter
+        // Address definition
+            parameter       ADDR_UartControl            = 3'd0;     // W
+            parameter       ADDR_UartMode               = 3'd1;     // R/W
+            parameter       ADDR_BaudRateGen            = 3'd2;     // R/W
+            parameter       ADDR_BitCompensateMethod    = 3'd3;     // R/W
+            parameter       ADDR_InterrputEnable        = 3'd4;     // W, the write direction
+            parameter       ADDR_InterruptMask          = 3'd5;     // R/W, the read direction    
+            parameter       ADDR_UartState              = 3'd6;     // R, read only Uart state
+            parameter       ADDR_UartFIFOData           = 3'd7;     // R/W, R-rx fifo port, W-tx fifo port           
+        // Default parameter -- BaudRateGen & BitCompensateMethod
             parameter       DEFAULT_PERIOD      = 16'd20;
             parameter       DEFAULT_UP_TIME     = 4'd10;
             parameter       DEFAULT_DOWN_TIME   = 4'd5;
-        // Uart mode parameter
+        // Uart mode parameter  -- UartMode Definition 
             parameter       NORMAL_MODE         = 4'b0001;    // Normal mode, tx port sends data and rx port receives data
             parameter       AUTO_ECHO_MODE      = 4'b0010;    // Automatic echo mode, rx port receives data and transfer to tx port
             parameter       LOCAL_LOOPBACK_MODE = 4'b0100;    // Local loopback mode, rx port connected to the tx port directly would not send out
             parameter       REMOTE_LOOPBACK_MODE= 4'b1000;    // Remote loopback mode, the input io and output io of uart was connected directly 
-        // Parity Enable definition
+        // Parity Enable definition  -- UartMode Defintion 
             parameter ENABLE    = 1'b1;
             parameter DISABLE   = 1'b0;
-        // Big end and littel end definition
+        // Big end and littel end definition --UartMode Defintion
             parameter BIGEND    = 1'b1;
             parameter LITTLEEND = 1'b0;
-        // parity method definition
+        // parity method definition  --UartMode Defintion
             parameter EVEN      = 1'b0;
             parameter ODD       = 1'b1;
     // assign

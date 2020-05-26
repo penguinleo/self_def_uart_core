@@ -46,23 +46,23 @@
 //   --------|----------|-----------|----------|-----|-----------------------|     B7    |     B6    |     B5    |    B4     |     B3    |     B2    |    B1     |     B0    |
 //    3'b000 |     X    |     X     |     X    | R/W |      UartControl      | ConfigEn  |IrqConfigEn|  IrqLvlEn |   ClkSel  |   RxEn    |    TxEn   |   RxRst   |   TxRst   |
 //    3'b001 |     1    |     0     |     0    | R/W |       UartMode        |                   ModeSel                     |   EndSel  |   ParEn   |  ParSel   |  Reserved |  
-//    3'b010 |     1    |     0     |     0    | R/W |   BaudGeneratorHigh   |   High 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1     | 
-//    3'b011 |     1    |     0     |     0    | R/W |   BaudGeneratorLow    |   Low 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1      |
+//    3'b010 |     1    |     0     |     0    | R/W |   BaudGeneratorHigh   | High 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1       | 
+//    3'b011 |     1    |     0     |     0    | R/W |   BaudGeneratorLow    | Low 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1        |
 //    3'b100 |     1    |     0     |     0    | R/W |  BitCompensateMethod  |         Round Up Period number in a bit       |       Round Down Period number in a bit       |
-//    3'b001 |     1    |     1     |     0    |  W  |    InterrputEnable1   | Reserved  | Reserved  |   RBRK    |   TOVR    |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |
-//    3'b010 |     1    |     1     |     0    |  W  |    InterrputEnable2   |   PARITY  |  FRAMING  |   OVER    |   TXFUL   |  TXEMPTY  |   RXFULL  |  RXEMPTY  |   RXOVR   | 
-//    3'b011 |     1    |     1     |     0    |  R  |    InterruptMask1     | Reserved  | Reserved  |   RBRK    |   TOVR    |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |
-//    3'b100 |     1    |     1     |     0    |  R  |    InterruptMask2     |   PARITY  |  FRAMING  |   OVER    |   TXFUL   |  TXEMPTY  |   RXFULL  |  RXEMPTY  |   RXOVR   |
-//    3'b001 |     1    |     1     |     1    | R/W |    RxTrigLevelHigh    |     High 8 bits of the rx fifo trigger level                                                         |      
-//    3'b010 |     1    |     1     |     1    | R/W |    RxTrigLevelLow     |     Low 8 bits of the rx fifo trigger level                                                   |
-//    3'b011 |     1    |     1     |     1    | R/W |    TxTrigLevelHigh    |     High 8 bits of the tx fifo trigger level                                                  |    
-//    3'b100 |     1    |     1     |     1    | R/W |    TxTrigLevelLow     |     Low 8 bits of the tx fifo trigger level                                                   |
-//    3'b001 |     0    |     0     |     0    | R/W |   InterruptStatus1    | Reserved  | Reserved  |   RBRK    |   TOVR    |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |     
-//    3'b010 |     0    |     0     |     0    | R/W |   InterruptStatus2    |   PARITY  |  FRAMING  |   OVER    |   TXFUL   |  TXEMPTY  |   RXFULL  |  RXEMPTY  |   RXOVR   | 
+//    3'b001 |     1    |     1     |     0    |  W  |    InterrputEnable1   | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |  TIMEOUT  |
+//    3'b010 |     1    |     1     |     0    |  W  |    InterrputEnable2   |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
+//    3'b011 |     1    |     1     |     0    |  R  |    InterruptMask1     | Reserved  | Reserved  |   RBRK    |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |
+//    3'b100 |     1    |     1     |     0    |  R  |    InterruptMask2     |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
+//    3'b001 |     1    |     1     |     1    | R/W |    RxTrigLevelHigh    | High 8 bits of the rx fifo trigger level                                                      |      
+//    3'b010 |     1    |     1     |     1    | R/W |    RxTrigLevelLow     | Low 8 bits of the rx fifo trigger level                                                       |
+//    3'b011 |     1    |     1     |     1    | R/W |    TxTrigLevelHigh    | High 8 bits of the tx fifo trigger level                                                      |    
+//    3'b100 |     1    |     1     |     1    | R/W |    TxTrigLevelLow     | Low 8 bits of the tx fifo trigger level                                                       |
+//    3'b001 |     0    |     0     |     0    | R/W |   InterruptStatus1    | Reserved  | Reserved  |   RBRK    |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |     
+//    3'b010 |     0    |     0     |     0    | R/W |   InterruptStatus2    |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
 //    3'b011 |     0    |     0     |     0    |  R  | BytesNumberReceived1  |   High 8 bits of the bytes' number in receive fifo                                            |
 //    3'b100 |     0    |     0     |     0    |  R  | BytesNumberReceived2  |   Low 8 bits of the bytes' number in receive fifo                                             |
 //    3'b101 |     X    |     X     |     X    |  R  |      UartStatus1      | Reserved  |   TNFUL   |   TTRIG   | Reserved  |  TACTIVE  |  RACTIVE  | Reserved  | Reserved  |
-//    3'b110 |     X    |     X     |     X    |  R  |      UartStatus2      | Reserved  | Reserved  | Reserved  |   TXFUL   |  TXEMPTY  |   RXFULL  |  RXEMPTY  |   RXOVR   |
+//    3'b110 |     X    |     X     |     X    |  R  |      UartStatus2      | Reserved  | Reserved  | Reserved  |   TXFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
 //    3'b111 |     X    |     X     |     X    |  R  |      RxDataPort       |     8 bit receive data read port
 //    3'b111 |     X    |     X     |     X    |  W  |      TxDataPort       |     8 bit transmite data send port
 // Note:  
@@ -114,14 +114,16 @@ module CtrlCore(
     );
     // Register definition //trip-modesynthesis syn_preserve=1
         reg [7:0]   UartControl_r1              /*synthesis syn_preserve = 1*/;  // W module control
+        reg         p_RxRst_r1                  /*synthesis syn_preserve = 1*/; 
+        reg         p_TxRst_r1                  /*synthesis syn_preserve = 1*/; 
         reg [7:0]   UartMode_r1                 /*synthesis syn_preserve = 1*/;  // R/W mode  
-        reg [15:0]  BaudGenerator_r             /*synthesis syn_preserve = 1*/;  // R/W the acquisite signal divide from the the system clock signal
+        reg [15:0]  BaudGenerator_r1            /*synthesis syn_preserve = 1*/;  // R/W the acquisite signal divide from the the system clock signal
         reg [7:0]   BitCompensateMethod_r1      /*synthesis syn_preserve = 1*/;  // R/W round up and down acquisition period, the sum of this two is the divider of acquisite signal and baud signal    
         reg [15:0]  InterrputEnable_r1          /*synthesis syn_preserve = 1*/;  // W   interrupt enable and disable control
         reg [15:0]  InterruptMask_r1            /*synthesis syn_preserve = 1*/;  // R the interrupt enable signal controlled 
         reg [15:0]  InterruptState_r1           /*synthesis syn_preserve = 1*/;  // R/W the interrupt signal and clear control register 
         reg [15:0]  UartState_r1                /*synthesis syn_preserve = 1*/;  // R the uart state register
-        reg [3:0]   BaudDivider_r1;
+        reg [3:0]   BaudDivider_r1              /*synthesis syn_preserve = 1*/;  // inner register calculated from the BitCompensateMethod_r1
     // Logic definition
         // page control signal definition
             wire        ConfigEn_w;
@@ -188,44 +190,64 @@ module CtrlCore(
             parameter   OFF     = 1'b0;
             parameter   N_ON    = 1'b0;
             parameter   N_OFF   = 1'b1;
-            //  UartControl bit 
+            // UartControl bit 
                 // ConfigEN
-                    parameter       UartControl_ConfigEn_ON     = 1'b1;   // In this state the cpu cound access the uart port configuration register
-                    parameter       UartControl_ConfigEn_OFF    = 1'b0;   // In this state the cpu access the uart port normal opperation register
+                    parameter   UartControl_ConfigEn_ON     = 1'b1;   // In this state the cpu cound access the uart port configuration register
+                    parameter   UartControl_ConfigEn_OFF    = 1'b0;   // In this state the cpu access the uart port normal opperation register
                 // IrqConfigEn
-                    parameter       UartControl_IrqConfigEn_ON  = 1'b1;
-                    parameter       UartControl_IrqConfigEn_OFF = 1'b0;
+                    parameter   UartControl_IrqConfigEn_ON  = 1'b1;
+                    parameter   UartControl_IrqConfigEn_OFF = 1'b0;
                 // IrqLvlEn
-                    parameter       UartControl_IrqLvlEn_ON     = 1'b1;
-                    parameter       UartControl_IrqLvlEn_OFF    = 1'b0;
+                    parameter   UartControl_IrqLvlEn_ON     = 1'b1;
+                    parameter   UartControl_IrqLvlEn_OFF    = 1'b0;
                 // ClkSel
-                    parameter       UartControl_ClkSel_Time1    = 1'b0;
-                    parameter       UartControl_ClkSel_Time8    = 1'b1;
+                    parameter   UartControl_ClkSel_Time1    = 1'b0;
+                    parameter   UartControl_ClkSel_Time8    = 1'b1;
                 // TxEn
-                    parameter       UartControl_TxEn_ON         = 1'b1;
-                    parameter       UartControl_TxEn_OFF        = 1'b0;
+                    parameter   UartControl_TxEn_ON         = 1'b1;
+                    parameter   UartControl_TxEn_OFF        = 1'b0;
                 // RxEn
-                    parameter       UartControl_RxEn_On         = 1'b1;
-                    parameter       UartControl_RxEn_OFF        = 1'b0;
+                    parameter   UartControl_RxEn_On         = 1'b1;
+                    parameter   UartControl_RxEn_OFF        = 1'b0;
             // UartMode bit definition
                 // ModeSel  --UartMode Definition 
-                    parameter       UartMode_NORMAL             = 4'b0001;    // Normal mode, tx port sends data and rx port receives data
-                    parameter       UartMode_AUTO_ECHO          = 4'b0010;    // Automatic echo mode, rx port receives data and transfer to tx port
-                    parameter       UartMode_LOCAL_LOOPBACK     = 4'b0100;    // Local loopback mode, rx port connected to the tx port directly would not send out
-                    parameter       UartMode_REMOTE_LOOPBACK    = 4'b1000;    // Remote loopback mode, the input io and output io of uart was connected directly  
+                    parameter   UartMode_NORMAL             = 4'b0001;    // Normal mode, tx port sends data and rx port receives data
+                    parameter   UartMode_AUTO_ECHO          = 4'b0010;    // Automatic echo mode, rx port receives data and transfer to tx port
+                    parameter   UartMode_LOCAL_LOOPBACK     = 4'b0100;    // Local loopback mode, rx port connected to the tx port directly would not send out
+                    parameter   UartMode_REMOTE_LOOPBACK    = 4'b1000;    // Remote loopback mode, the input io and output io of uart was connected directly  
                 // EndSel
-                    parameter       UartMode_BIGEND             = 1'b1;
-                    parameter       UartMode_LITTLEEND          = 1'b0;    
+                    parameter   UartMode_BIGEND             = 1'b1;
+                    parameter   UartMode_LITTLEEND          = 1'b0;    
                 // ParEn
-                    parameter       UartMode_Parity_ENABLE      = 1'b1;
-                    parameter       UartMode_Parity_DISABLE     = 1'b0;
+                    parameter   UartMode_Parity_ENABLE      = 1'b1;
+                    parameter   UartMode_Parity_DISABLE     = 1'b0;
                 // ParSel
-                    parameter       UartMode_ParSel_EVEN        = 1'b0;
-                    parameter       UartMode_ParSel_ODD         = 1'b1;
+                    parameter   UartMode_ParSel_EVEN        = 1'b0;
+                    parameter   UartMode_ParSel_ODD         = 1'b1;
+            // Interrput bit definition
+                // TOVR, Overflow interrupt of the tx fifo
+                    parameter   TOVR_ON                     = 1'b1;
+                    parameter   TOVR_OFF                    = 1'b0;
+                // TNFUL, Nearly Full Interrupt
+                    parameter   TNFUL_ON                    = 1'b1;
+                    parameter   TNFUL_OFF                   = 1'b0;
+                // TTRIG, Trigger interrupt of the tx fifo
+                    parameter   TTRIG_ON                    = 1'b1;
+                    parameter   TTRIG_OFF                   = 1'b0;
+                // TIMEOUT, Receiver Timeout Error Interrupt
+                    parameter   TIMEOUT_ON                  = 1'b1;
+                    parameter   TIMEOUT_OFF                 = 1'b0;
+                // PARE, Receiver parity error interrupt 
+                    parameter   PARE_ON                     = 1'b1;
+                    parameter   PARE_OFF                    = 1'b0;
+                // FRAME, Receiver framing error interrupt, triggered whenever the receiver fails to detect a valid stop bit
+                    parameter   FRAME_ON                    = 1'b1;
+                    parameter   FRAME_OFF                   = 1'b0;
+                // ROVR, 
         // Default parameter -- BaudRateGen & BitCompensateMethod
-            parameter       DEFAULT_PERIOD      = 16'd20;
-            parameter       DEFAULT_UP_TIME     = 4'd10;
-            parameter       DEFAULT_DOWN_TIME   = 4'd5;
+            parameter       DEFAULT_PERIOD      = 16'd68;    // Best choice for the 115200bps
+            parameter       DEFAULT_UP_TIME     = 4'd2;
+            parameter       DEFAULT_DOWN_TIME   = 4'd3;
     // Logic assign definition
         // page control signal definition
             assign ConfigEn_w       = UartControl_r1[7];
@@ -259,44 +281,86 @@ module CtrlCore(
             assign TxDataPort_Write_Access_w            = ChipWriteAccess_w && (AddrBus_i == ADDR_TxDataPort);  
     // UartControl register fresh 
         always @(posedge clk or negedge rst) begin
-            if (!rst) begin
-                UartControl_r1 <= { UartControl_ConfigEn_ON,    UartControl_IrqConfigEn_OFF, 
+            if (!rst) begin    // Initial state
+                UartControl_r1  <= { UartControl_ConfigEn_ON,    UartControl_IrqConfigEn_OFF, 
                                     UartControl_IrqLvlEn_OFF,   UartControl_ClkSel_Time1,
                                     UartControl_RxEn_OFF,       UartControl_TxEn_OFF,
                                     2'b00
-                                    }                
+                                    };
+                p_RxRst_r1      <= OFF;
+                p_TxRst_r1      <= OFF;                              
             end
             else if (UartControl_Write_Access_w == ON ) begin
-                
-            end
-        end
-        always @(posedge clk or negedge rst) begin
-            if (!rst) begin
-                BaudRateGen_r       <= DEFAULT_PERIOD;
-                BitCompensation_r   <= {DEFAULT_UP_TIME,DEFAULT_DOWN_TIME};
-                p_ParityEnable_r    <= ENABLE;
-                p_BigEnd_r          <= LITTLEEND;
-                ParityMethod_r      <= ODD;
-                AcqNumPerBit_r      <= DEFAULT_UP_TIME + DEFAULT_DOWN_TIME;     
-                UartMode_r          <= NORMAL_MODE; 
-            end
-            else if (p_We_i == 1'b1) begin
-                BaudRateGen_r       <= BaudRateGen_i;
-                BitCompensation_r   <= BitCompensateMethod;
-                p_ParityEnable_r    <= ModeCtrl_i[6];
-                p_BigEnd_r          <= ModeCtrl_i[7];
-                ParityMethod_r      <= ModeCtrl_i[5];
-                UartMode_r          <= ModeCtrl_i[3:0];
-                AcqNumPerBit_r      <= BitCompensateMethod[7:4] + BitCompensateMethod[3:0];
+                UartControl_r1  <= {DataBus_i[7:2],2'b00};
+                p_RxRst_r1      <= DataBus_i[1];
+                p_TxRst_r1      <= DataBus_i[0];  
             end
             else begin
-                BaudRateGen_r       <= BaudRateGen_r;
-                BitCompensation_r   <= BitCompensation_r;
-                p_ParityEnable_r    <= p_ParityEnable_r;
-                p_BigEnd_r          <= p_BigEnd_r;
-                ParityMethod_r      <= ParityMethod_r;
-                UartMode_r          <= UartMode_r;
-                AcqNumPerBit_r      <= AcqNumPerBit_r;
+                UartControl_r1  <= UartControl_r1;
+                p_RxRst_r1      <= OFF;
+                p_TxRst_r1      <= OFF; 
+            end
+        end
+    // UartMode register fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin   // Initial state
+                UartMode_r1     <= {UartMode_LOCAL_LOOPBACK,    UartMode_BIGEND,
+                                    UartMode_Parity_DISABLE,    UartMode_ParSel_EVEN,
+                                    1'b0};                
+            end
+            else if (UartMode_Write_Access_w == ON ) begin
+                UartMode_r1     <= DataBus_i;
+            end
+            else begin
+                UartMode_r1     <= UartMode_r1;
+            end
+        end
+    // BaudGeneratorHigh register fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                BaudGenerator_r1[15:8] <= DEFAULT_PERIOD[15:8];
+            end
+            else if (BaudGeneratorHigh_Write_Access_w == ON ) begin
+                BaudGenerator_r1[15:8] <= DataBus_i;
+            end
+            else begin
+                BaudGenerator_r1[15:8] <= BaudGenerator_r1[15:8];
+            end
+        end
+    // BaudGeneratorLow register fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                BaudGenerator_r1[7:0]  <= DEFAULT_PERIOD[7:0];
+            end
+            else if (BaudGeneratorLow_Write_Access_w == ON ) begin
+                BaudGenerator_r1[7:0]  <= DataBus_i;
+            end
+            else begin
+                BaudGenerator_r1[7:0]  <= BaudGenerator_r1[7:0];
+            end
+        end
+    // BitCompensateMethod register fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                BitCompensateMethod_r1 <= {DEFAULT_UP_TIME, DEFAULT_DOWN_TIME};
+                BaudDivider_r1         <= DEFAULT_UP_TIME + DEFAULT_DOWN_TIME;
+            end
+            else if (BitCompensateMethod_Write_Access_w == ON ) begin
+                BitCompensateMethod_r1 <= DataBus_i;
+                BaudDivider_r1         <= DataBus_i[7:4] + DataBus_i[3:0];
+            end
+            else begin
+                BitCompensateMethod_r1 <= BitCompensateMethod_r1;
+                BaudDivider_r1         <= BaudDivider_r1;
+            end
+        end
+    // InterrputEnable1 register fresh
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                                
+            end
+            else if () begin
+                
             end
         end
 endmodule

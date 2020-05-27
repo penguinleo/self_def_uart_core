@@ -24,7 +24,7 @@
 // -----------------------------------------------------------------------------
 module  FIFO_ver1
 #(
-    parameter DEPTH = 8'd128
+    parameter DEPTH = 16'd128
     )
 (
     input           clk,
@@ -40,9 +40,9 @@ module  FIFO_ver1
     );
     // register definition
         reg [7:0]   memory [DEPTH-1:0];     // the memory
-        reg [7:0]   pointer_wr_r;           // the memory pointer for write
-        reg [7:0]   pointer_rd_r;           // the memory pointer for read
-        reg [7:0]   next_pointer_wr_r;      // the next pointer of the wr pointer
+        reg [15:0]  pointer_wr_r;           // the memory pointer for write
+        reg [15:0]  pointer_rd_r;           // the memory pointer for read
+        reg [15:0]  next_pointer_wr_r;      // the next pointer of the wr pointer
         reg         p_empty_r;
         reg         p_full_r;
         reg [7:0]   output_data_r;
@@ -62,7 +62,7 @@ module  FIFO_ver1
     // the write pointer fresh
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin
-                pointer_wr_r <= 8'd0;                
+                pointer_wr_r <= 16'd0;                
             end
             else if ((n_we_i == 1'b0) && (p_full_w == 1'b0)) begin
                 pointer_wr_r <= next_pointer_wr_r;
@@ -74,7 +74,7 @@ module  FIFO_ver1
     // the next write pointer fresh
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin
-                next_pointer_wr_r <= 8'd1;                
+                next_pointer_wr_r <= 16'd1;                
             end
             else if ((n_we_i == 1'b0) && (p_full_w == 1'b0)) begin
                 if (next_pointer_wr_r >= DEPTH-1) begin
@@ -112,7 +112,7 @@ module  FIFO_ver1
     // the read pointer fresh
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin
-                pointer_rd_r <= 8'd0;                
+                pointer_rd_r <= 16'd0;                
             end
             else if ((n_re_i == 1'b0) && (p_empty_w == 1'b0)) begin
                 if (pointer_rd_r >= DEPTH-1) begin

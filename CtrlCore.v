@@ -42,29 +42,41 @@
 //      5   |   p_BigEnd_o          :   The format control signal output for other uart submodules, 0-even,1-odd;
 //      6   |   ParityMethod_o      :   The parity method select signal output for other uart submodule, 0-even,1-odd;
 // Register Map:
-//   Address | ConfigEn |IrqConfigEn| IrqLvlEn | Dir |         Name          |                                       Bit Definition                                          | 
-//   --------|----------|-----------|----------|-----|-----------------------|     B7    |     B6    |     B5    |    B4     |     B3    |     B2    |    B1     |     B0    |
-//    3'b000 |     X    |     X     |     X    | R/W |      UartControl      | ConfigEn  |IrqConfigEn|  IrqLvlEn |   ClkSel  |   RxEn    |    TxEn   |   RxRst   |   TxRst   |
-//    3'b001 |     1    |     0     |     0    | R/W |       UartMode        |                   ModeSel                     |   EndSel  |   ParEn   |  ParSel   |  Reserved |  
-//    3'b010 |     1    |     0     |     0    | R/W |   BaudGeneratorHigh   | High 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1       | 
-//    3'b011 |     1    |     0     |     0    | R/W |   BaudGeneratorLow    | Low 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1        |
-//    3'b100 |     1    |     0     |     0    | R/W |  BitCompensateMethod  |         Round Up Period number in a bit       |       Round Down Period number in a bit       |
-//    3'b001 |     1    |     1     |     0    |  W  |    InterrputEnable1   | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |  TIMEOUT  |
-//    3'b010 |     1    |     1     |     0    |  W  |    InterrputEnable2   |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
-//    3'b011 |     1    |     1     |     0    |  R  |    InterruptMask1     | Reserved  | Reserved  |   RBRK    |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |
-//    3'b100 |     1    |     1     |     0    |  R  |    InterruptMask2     |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
-//    3'b001 |     1    |     1     |     1    | R/W |    RxTrigLevelHigh    | High 8 bits of the rx fifo trigger level                                                      |      
-//    3'b010 |     1    |     1     |     1    | R/W |    RxTrigLevelLow     | Low 8 bits of the rx fifo trigger level                                                       |
-//    3'b011 |     1    |     1     |     1    | R/W |    TxTrigLevelHigh    | High 8 bits of the tx fifo trigger level                                                      |    
-//    3'b100 |     1    |     1     |     1    | R/W |    TxTrigLevelLow     | Low 8 bits of the tx fifo trigger level                                                       |
-//    3'b001 |     0    |     0     |     0    | R/W |   InterruptStatus1    | Reserved  | Reserved  |   RBRK    |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |     
-//    3'b010 |     0    |     0     |     0    | R/W |   InterruptStatus2    |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
-//    3'b011 |     0    |     0     |     0    |  R  | BytesNumberReceived1  |   High 8 bits of the bytes' number in receive fifo                                            |
-//    3'b100 |     0    |     0     |     0    |  R  | BytesNumberReceived2  |   Low 8 bits of the bytes' number in receive fifo                                             |
-//    3'b101 |     X    |     X     |     X    |  R  |      UartStatus1      | Reserved  |   TNFUL   |   TTRIG   | Reserved  |  TACTIVE  |  RACTIVE  | Reserved  | Reserved  |
-//    3'b110 |     X    |     X     |     X    |  R  |      UartStatus2      | Reserved  | Reserved  | Reserved  |   TXFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
-//    3'b111 |     X    |     X     |     X    |  R  |      RxDataPort       |     8 bit receive data read port
-//    3'b111 |     X    |     X     |     X    |  W  |      TxDataPort       |     8 bit transmite data send port
+//    Address | DecAddr | ConfigEn | Dir |         Name          |                                       Bit Definition                                          | 
+//   ---------|---------|----------|-----|-----------------------|-----B7----|-----B6----|-----B5----|-----B4----|-----B3----|-----B2----|-----B1----|-----B0----|
+//    4'b0000 |    0    |     X    | R/W |      UartControl      | ConfigEn  | Reserved  |  Reserved |   ClkSel  |   RxEn    |    TxEn   |   RxRst   |   TxRst   |
+//    4'b0001 |    1    |     X    |  R  |      UartStatus1      | Reserved  |   TNFUL   |   TTRIG   | Reserved  |  TACTIVE  |  RACTIVE  | Reserved  | Reserved  |
+//    4'b0010 |    2    |     X    |  R  |      UartStatus2      | Reserved  | Reserved  | Reserved  |   TXFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
+//    4'b0011 |    3    |     X    |  R  |      RxDataPort       |     8-bit receive data read port                                                              |
+//    4'b0011 |    3    |     X    |  W  |      TxDataPort       |     8-bit transmite data send port                                                            |
+//   ---------|---------|----------|-----|-----------------------|-----B7----|-----B6----|-----B5----|-----B4----|-----B3----|-----B2----|-----B1----|-----B0----|
+//    4'b0100 |    4    |     1    | R/W |       UartMode        |                   ModeSel                     |   EndSel  |   ParEn   |  ParSel   |  Reserved |
+//    4'b0101 |    5    |     1    | R/W |   BaudGeneratorHigh   | High 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1       | 
+//    4'b0110 |    6    |     1    | R/W |   BaudGeneratorLow    | Low 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1        |
+//    4'b0111 |    7    |     1    | R/W |  BitCompensateMethod  |         Round Up Period number in a bit       |       Round Down Period number in a bit       |
+//    4'b1000 |    8    |     1    |  W  |    InterrputEnable1   | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |  TIMEOUT  |
+//    4'b1001 |    9    |     1    |  W  |    InterrputEnable2   |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
+//    4'b1000 |    8    |     1    |  R  |    InterruptMask1     | Reserved  | Reserved  |   RBRK    |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |
+//    4'b1001 |    9    |     1    |  R  |    InterruptMask2     |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
+//    4'b1010 |    10   |     1    | R/W |    RxTrigLevelHigh    | High 8 bits of the rx fifo trigger level                                                      |      
+//    4'b1011 |    11   |     1    | R/W |    RxTrigLevelLow     | Low 8 bits of the rx fifo trigger level                                                       |
+//    4'b1100 |    12   |     1    | R/W |    TxTrigLevelHigh    | High 8 bits of the tx fifo trigger level                                                      |    
+//    4'b1101 |    13   |     1    | R/W |    TxTrigLevelLow     | Low 8 bits of the tx fifo trigger level                                                       |
+//    4'b1110 |    14   |     1    |  R  |     ReservedDddr1     |                                                                                               |
+//    4'b1111 |    15   |     1    |  R  |     ReservedDddr2     |                                                                                               |
+//   ---------|---------|----------|-----|-----------------------|-----B7----|-----B6----|-----B5----|-----B4----|-----B3----|-----B2----|-----B1----|-----B0----|
+//    4'b0100 |    4    |     0    | R/W |   InterruptStatus1    | Reserved  | Reserved  |   RBRK    |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |     
+//    4'b0101 |    5    |     0    | R/W |   InterruptStatus2    |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
+//    4'b0110 |    6    |     0    |  R  | BytesNumberReceived1  |   High 8 bits of the bytes' number in receive fifo                                            |
+//    4'b0111 |    7    |     0    |  R  | BytesNumberReceived2  |   Low 8 bits of the bytes' number in receive fifo                                             |
+//    4'b1000 |    8    |     0    |  R  |     FrameInfo0        | 
+//    4'b1001 |    9    |     0    |  R  |     FrameInfo1        |  
+//    4'b1010 |    10   |     0    |  R  |     FrameInfo2        |  
+//    4'b1011 |    11   |     0    |  R  | 
+//    4'b1100 |    12   |     0    |  R  | 
+//    4'b1101 |    13   |     0    |  R  | 
+//    4'b1110 |    14   |     0    |  R  | 
+//    4'b1111 |    15   |     0    |  R  | 
 // Note:  
 // 
 // -----------------------------------------------------------------------------   
@@ -547,50 +559,53 @@ module CtrlCore(
         end
     // Read data operation 
         always @(posedge clk or negedge rst) begin
-             if (!rst) begin
-                DataBus_r1 <= 8'hff;              
-             end
-             else if (UartControl_Read_Access_w == ON) begin
-                DataBus_r1 <= UartControl_r1;
-             end
-             else if (UartMode_Read_Access_w == ON ) begin
-                DataBus_r1 <= UartMode_r1;
-             end
-             else if (BaudGeneratorHigh_Read_Access_w == ON ) begin
-                DataBus_r1 <= BaudGenerator_r1[15:8];
-             end
-             else if (BaudGeneratorLow_Read_Access_w == ON ) begin
-                DataBus_r1 <= BaudGenerator_r1[7:0];
-             end
-             else if (BitCompensateMethod_Read_Access_w == ON ) begin
-                DataBus_r1 <= BitCompensateMethod_r1;
-             end
-             else if (RxTrigLevelHigh_Read_Access_w == ON ) begin
-                DataBus_r1 <= RxTrigLevel_r1[15:8];
-             end
-             else if (RxTrigLevelLow_Read_Access_w == ON ) begin
-                DataBus_r1 <= RxTrigLevel_r1[7:0];
-             end
-             else if (TxTrigLevelHigh_Read_Access_w == ON ) begin
-                DataBus_r1 <= TxTrigLevel_r1[15:8];
-             end
-             else if (TxTrigLevelLow_Read_Access_w == ON ) begin
-                DataBus_r1 <= TxTrigLevel_r1[7:0];
-             end
-             else if (InterruptStatus1_Read_Access_w == ON ) begin
-                DataBus_r1 <= InterruptState_r1[15:8];
-             end
-             else if (InterruptStatus2_Read_Access_w == ON ) begin
-                DataBus_r1 <= InterruptState_r1[7:0];
-             end
-             else if (BytesNumberReceived1_Read_Access_w == ON ) begin
-                DataBus_r1 <= BytesNumberInRxFifo_r1[15:8];
-             end
-             else if (BytesNumberReceived2_Read_Access_w == ON ) begin
-                DataBus_r1 <= BytesNumberInRxFifo_r1[7:0];
-             end
-             else if () begin
-                 
-             end
+            if (!rst) begin
+               DataBus_r1 <= 8'hff;              
+            end
+            else if (UartControl_Read_Access_w == ON) begin
+               DataBus_r1 <= UartControl_r1;
+            end
+            else if (UartMode_Read_Access_w == ON ) begin
+               DataBus_r1 <= UartMode_r1;
+            end
+            else if (BaudGeneratorHigh_Read_Access_w == ON ) begin
+               DataBus_r1 <= BaudGenerator_r1[15:8];
+            end
+            else if (BaudGeneratorLow_Read_Access_w == ON ) begin
+               DataBus_r1 <= BaudGenerator_r1[7:0];
+            end
+            else if (BitCompensateMethod_Read_Access_w == ON ) begin
+               DataBus_r1 <= BitCompensateMethod_r1;
+            end
+            else if (RxTrigLevelHigh_Read_Access_w == ON ) begin
+               DataBus_r1 <= RxTrigLevel_r1[15:8];
+            end
+            else if (RxTrigLevelLow_Read_Access_w == ON ) begin
+               DataBus_r1 <= RxTrigLevel_r1[7:0];
+            end
+            else if (TxTrigLevelHigh_Read_Access_w == ON ) begin
+               DataBus_r1 <= TxTrigLevel_r1[15:8];
+            end
+            else if (TxTrigLevelLow_Read_Access_w == ON ) begin
+               DataBus_r1 <= TxTrigLevel_r1[7:0];
+            end
+            else if (InterruptStatus1_Read_Access_w == ON ) begin
+               DataBus_r1 <= InterruptState_r1[15:8];
+            end
+            else if (InterruptStatus2_Read_Access_w == ON ) begin
+               DataBus_r1 <= InterruptState_r1[7:0];
+            end
+            else if (BytesNumberReceived1_Read_Access_w == ON ) begin
+               DataBus_r1 <= BytesNumberInRxFifo_r1[15:8];
+            end
+            else if (BytesNumberReceived2_Read_Access_w == ON ) begin
+               DataBus_r1 <= BytesNumberInRxFifo_r1[7:0];
+            end
+            else if (UartStatus1_Read_Access_w == ON ) begin
+               DataBus_r1 <= UartState_r1[15:8];
+            end
+            else if (UartStatus2_Read_Access_w == ON ) begin
+               DataBus_r1 <= UartState_r1[7:0];
+            end
          end 
 endmodule

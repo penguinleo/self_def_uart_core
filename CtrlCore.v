@@ -6,37 +6,37 @@
 // Create : 2019-12-17 15:19:59
 // Revise : 2019-12-17 15:19:59
 // Editor : sublime text3, tab size (4)
-// Comment: this module is designed to control the uart port.
-//          The uart module is designed a compensate method to implement an acqurate bit width
-//          I call this method acquisite period compensate method.
+// Comment: this module is designed to control the UART port.
+//          The UART module is designed a compensate method to implement an accurate bit width
+//          I call this method acquisition period compensate method.
 //          In further, the bit width compensate method would be introduced to reduce the accumulate
-//          error in the last bit of a byte during transmitte.
+//          error in the last bit of a byte during transmitting.
 //          Up module:
 //              UartCore
 //          Sub module:
 //              None
 // Input Signal List:
-//      1   |   clk                 :   clock signal
-//      2   |   rst                 :   reset signal
+//      1   |   CLK                 :   clock signal
+//      2   |   RST                 :   reset signal
 //      3   |   p_We_i              :   control register write enable signal, positive effective.
 //      4   |   CtrlReg1_i          :   Control parameter register,
 //                                      Bit 7 controls the big end or little end format;
 //                                      Bit 6 controls the parity function, 1-enable,0-disable;
 //                                      Bit 5 choose the parity method, 0-even,1-odd;
 //                                      Bit 4 reserved bit;
-//                                      Bit 3 ~ 0 are the high 4 bits of acquisite period control reg;
+//                                      Bit 3 ~ 0 are the high 4 bits of acquisition period control reg;
 //      6   |   BitCompensateMethod :   Compensation control register
-//                                      Bit 7 ~ 4 are the number of round-up acquisite period in a bit time;
+//                                      Bit 7 ~ 4 are the number of round-up acquisition period in a bit time;
 //                                      Bit 3 ~ 0 are the number of round-down period in a bit time;
-//                                      The acquisite period control reg is the round-down period data.
+//                                      The acquisition period control reg is the round-down period data.
 // Output Signal List:      
-//      1   |   BaudRateGen_o       :   The acquisite perid control register output. This period is the round-down
+//      1   |   BaudRateGen_o       :   The acquisition period control register output. This period is the round-down
 //                                      period. This data is sent to the BaudGenerate module to generate the AcqSig
 //      2   |   BitCompensation_o   :   The compensate control register, which would help the BaudGenerate module
 //                                      reduce the bit width error less than a system clk;
-//                                      Bit 7 ~ 4 are the number of round-up acquisite period in a bit time
-//                                      Bit 3 ~ 0 are the number of round-down acquisite period in a bit time
-//      3   |   AcqNumPerBit_o      :   The number to acquisite opperation in a bit time. This data is the sum of
+//                                      Bit 7 ~ 4 are the number of round-up acquisition period in a bit time
+//                                      Bit 3 ~ 0 are the number of round-down acquisition period in a bit time
+//      3   |   AcqNumPerBit_o      :   The number to acquisition operation in a bit time. This data is the sum of
 //                                      the BitCompensation_o[7:4] + BitCompensation_o[3:0]
 //      4   |   p_ParityEnable_o    :   The parity enable signal output for other uart submodules, 1-enable,0-disable;
 //      5   |   p_BigEnd_o          :   The format control signal output for other uart submodules, 0-even,1-odd;
@@ -48,7 +48,7 @@
 //    4'b0001 |    1    |     X    |  R  |      UartStatus1      | Reserved  |   TNFUL   |   TTRIG   | Reserved  |  TACTIVE  |  RACTIVE  | Reserved  | Reserved  |
 //    4'b0010 |    2    |     X    |  R  |      UartStatus2      | Reserved  | Reserved  | Reserved  |   TXFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
 //    4'b0011 |    3    |     X    |  R  |      RxDataPort       |     8-bit receive data read port                                                              |
-//    4'b0011 |    3    |     X    |  W  |      TxDataPort       |     8-bit transmite data send port                                                            |
+//    4'b0011 |    3    |     X    |  W  |      TxDataPort       |     8-bit transmits data send port                                                            |
 //   ---------|---------|----------|-----|-----------------------|-----B7----|-----B6----|-----B5----|-----B4----|-----B3----|-----B2----|-----B1----|-----B0----|
 //    4'b0100 |    4    |     1    | R/W |       UartMode        |                   ModeSel                     |   EndSel  |   ParEn   |  ParSel   |  Reserved |
 //    4'b0101 |    5    |     1    | R/W |   BaudGeneratorHigh   | High 8 bits of the Baudrate generator register, write access enabled when ConfigEn == 1       | 
@@ -56,29 +56,30 @@
 //    4'b0111 |    7    |     1    | R/W |  BitCompensateMethod  |         Round Up Period number in a bit       |       Round Down Period number in a bit       |
 //    4'b1000 |    8    |     1    |  W  |    InterrputEnable1   | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |  TIMEOUT  |
 //    4'b1001 |    9    |     1    |  W  |    InterrputEnable2   |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
-//    4'b1000 |    8    |     1    |  R  |    InterruptMask1     | Reserved  | Reserved  |   RBRK    |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |
+//    4'b1000 |    8    |     1    |  R  |    InterruptMask1     | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |
 //    4'b1001 |    9    |     1    |  R  |    InterruptMask2     |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
 //    4'b1010 |    10   |     1    | R/W |    RxTrigLevelHigh    | High 8 bits of the rx fifo trigger level                                                      |      
 //    4'b1011 |    11   |     1    | R/W |    RxTrigLevelLow     | Low 8 bits of the rx fifo trigger level                                                       |
 //    4'b1100 |    12   |     1    | R/W |    TxTrigLevelHigh    | High 8 bits of the tx fifo trigger level                                                      |    
 //    4'b1101 |    13   |     1    | R/W |    TxTrigLevelLow     | Low 8 bits of the tx fifo trigger level                                                       |
-//    4'b1110 |    14   |     1    |  R  |     ReservedDddr1     |                                                                                               |
-//    4'b1111 |    15   |     1    |  R  |     ReservedDddr2     |                                                                                               |
+//    4'b1110 |    14   |     1    | R/W |   ReceiveTimeOutHigh  | Receive time out value                                                                                                 |
+//    4'b1111 |    15   |     1    | R/W |   ReceiveTimeOutLow   | Receive time out value                                                                        |
 //   ---------|---------|----------|-----|-----------------------|-----B7----|-----B6----|-----B5----|-----B4----|-----B3----|-----B2----|-----B1----|-----B0----|
-//    4'b0100 |    4    |     0    | R/W |   InterruptStatus1    | Reserved  | Reserved  |   RBRK    |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |     
+//    4'b0100 |    4    |     0    | R/W |   InterruptStatus1    | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |     
 //    4'b0101 |    5    |     0    | R/W |   InterruptStatus2    |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
 //    4'b0110 |    6    |     0    |  R  | BytesNumberReceived1  |   High 8 bits of the bytes' number in receive fifo                                            |
 //    4'b0111 |    7    |     0    |  R  | BytesNumberReceived2  |   Low 8 bits of the bytes' number in receive fifo                                             |
-//    4'b1000 |    8    |     0    |  R  |     FrameInfo0        | 
-//    4'b1001 |    9    |     0    |  R  |     FrameInfo1        |  
-//    4'b1010 |    10   |     0    |  R  |     FrameInfo2        |  
-//    4'b1011 |    11   |     0    |  R  | 
-//    4'b1100 |    12   |     0    |  R  | 
-//    4'b1101 |    13   |     0    |  R  | 
-//    4'b1110 |    14   |     0    |  R  | 
-//    4'b1111 |    15   |     0    |  R  | 
+//    4'b1000 |    8    |     0    |  R  |    FrameFifoStatus    |     
+//    4'b1001 |    9    |     0    |  R  |  FrameBytesNumberHigh | The frame bytes number of this frame                                                          |
+//    4'b1010 |    10   |     0    |  R  |  FrameBytesNumberLow  | The frame bytes number of this frame                                                          |
+//    4'b1011 |    11   |     0    |  R  |  FrameTimeStampInfo1  | Millisecond time stamp of this frame low 8 bits                                               |      
+//    4'b1100 |    12   |     0    |  R  |  FrameTimeStampInfo2  | Millisecond time stamp high 4 bits            | MicroSecond time stamp 4 bits width           |
+//    4'b1101 |    13   |     0    |  R  |   FrameAnsTimeInfo1   | 
+//    4'b1110 |    14   |     0    |  R  |   FrameAnsTimeInfo2   | 
+//    4'b1111 |    15   |     0    |  R  |     ReservedAddr3     |   
 // Note:  
-// 
+// 2020-05-30  The Receive fifo operation should be careful. In my opinion, the data read operation in the bus may be delay a clk. Due to the delay of the fifo read
+//              operation. It is better to think about it carefully and added into the datasheet
 // -----------------------------------------------------------------------------   
 module CtrlCore(
     input   clk,
@@ -90,19 +91,22 @@ module CtrlCore(
         input           n_we_i,                     // operation direction control signal write direction, negative enable
         input  [7:0]    DataBus_i,                  // data bus input direction write data into the registers
         output [7:0]    DataBus_o,                  // data bus output direction read data from the registers
+        output          p_IrqSig_o,                 // the interrupt signal generated by the UART module
     // baudrate module interface
-        output [15:0]   BaudRateGen_o,              // The divider data for the acquisite period
-        output [3:0]    RoundUpNum_o,               // The compensate method high 4 bits, round up acquisite period
-        output [3:0]    RoundDownNum_o,             // The compensate method low 4 bits, round down acquisite period
-        output [3:0]    BaudDivider_o,              // The divider for the baudrate signal and the acquisite signal
+        output [15:0]   BaudRateGen_o,              // The divider data for the acquisition period
+        output [3:0]    RoundUpNum_o,               // The compensate method high 4 bits, round up acquisition period
+        output [3:0]    RoundDownNum_o,             // The compensate method low 4 bits, round down acquisition period
+        output [3:0]    BaudDivider_o,              // The divider for the baudrate signal and the acquisition signal
     // tx module interface
         output          p_TxCoreEn_o,               // The Tx core enable signal. Positive effective 
         // fifo control signal
             output [7:0]    TxData_o,               // Tx Fifo write data port
+            input           p_TxFIFO_Over_i,        // Tx Fifo overflow signal
             input           p_TxFIFO_Full_i,        // Tx Fifo full signal, positive the fifo full
+            input           p_TxFIFO_NearFull_i,    // Tx Fifo near full signal
             output          n_TxFIFO_We_o,          // Tx Fifo write control singal, negative effective
             output          n_TxFIFO_Clr_o,         // Tx Fifo clear signal, negative effective
-            input [15:0]    TxFIFO_Level_i,         // The bytes number in the Tx fifo 
+            input [15:0]    TxFIFO_Level_i,         // The bytes number in the Tx fifo          
     // rx module interface
         output          p_RxCoreEn_o,               //The Rx core enable signal. Positive effective
         // error signal
@@ -117,6 +121,7 @@ module CtrlCore(
         // extend function signal(Data link level)
             output          p_RxFrame_Func_En_o,    // Data link level protocol function enable control
             input [27:0]    RxFrameInfo_i,          // Data link level protocol function extension
+            input [15:0]    AnsDelayTime_i,         // The interval between the last tx bit and the first rx bit, count the AcqSig
             input           p_RxFrame_Empty_i,      // No Received frame
             output          n_RxFrameInfo_Rd_o,     // Read frame informatoin control signal, negative enable     
     // Rx & Tx encode control control output
@@ -129,8 +134,8 @@ module CtrlCore(
         reg         p_RxRst_r1                  /*synthesis syn_preserve = 1*/; 
         reg         p_TxRst_r1                  /*synthesis syn_preserve = 1*/; 
         reg [7:0]   UartMode_r1                 /*synthesis syn_preserve = 1*/;  // R/W mode  
-        reg [15:0]  BaudGenerator_r1            /*synthesis syn_preserve = 1*/;  // R/W the acquisite signal divide from the the system clock signal
-        reg [7:0]   BitCompensateMethod_r1      /*synthesis syn_preserve = 1*/;  // R/W round up and down acquisition period, the sum of this two is the divider of acquisite signal and baud signal    
+        reg [15:0]  BaudGenerator_r1            /*synthesis syn_preserve = 1*/;  // R/W the acquisition signal divide from the the system clock signal
+        reg [7:0]   BitCompensateMethod_r1      /*synthesis syn_preserve = 1*/;  // R/W round up and down acquisition period, the sum of this two is the divider of acquisition signal and baud signal    
         // reg [15:0]  InterrputEnable_r1       /*synthesis syn_preserve = 1*/;  // W   interrupt enable and disable control
         reg [15:0]  InterruptMask_r1            /*synthesis syn_preserve = 1*/;  // R the interrupt enable signal controlled 
         reg [15:0]  RxTrigLevel_r1              /*synthesis syn_preserve = 1*/;  // R/W the trigger level of the rx fifo
@@ -138,10 +143,13 @@ module CtrlCore(
         reg [15:0]  InterruptState_r1           /*synthesis syn_preserve = 1*/;  // R/W the interrupt signal and clear control register 
         reg [15:0]  UartState_r1                /*synthesis syn_preserve = 1*/;  // R the uart state register
         reg [3:0]   BaudDivider_r1              /*synthesis syn_preserve = 1*/;  // -- inner register calculated from the BitCompensateMethod_r1
-        reg         n_TxFIFO_We_r1              /*synthesis syn_preserve = 1*/;  // -- the write signal of the tx module 
+        reg [2:0]   TxFIFO_We_r1                /*synthesis syn_preserve = 1*/;  // -- the write signal of the tx module 
         reg [7:0]   DataBus_r1                  /*synthesis syn_preserve = 1*/;  // R the data bus in output direction
         reg [15:0]  BytesNumberInRxFifo_r1      /*synthesis syn_preserve = 1*/;  // R the bytes number in the receive fifo 
-        reg [15:0]  BytesNumberInTxFifo_r1      /*synthesis syn_preserve = 1*/;  // R the bytes number in the transmite fifo 
+        reg [15:0]  BytesNumberInTxFifo_r1      /*synthesis syn_preserve = 1*/;  // R the bytes number in the transmit fifo 
+        reg [15:0]  ReceiveTimeOutLvl_r1        /*synthesis syn_preserve = 1*/;  // R/W the receive time out buffer, count the acquisition signal - AcqSig
+        reg         p_IrqSig_r1                 /*synthesis syn_preserve = 1*/;  // Output interrupt signal 
+        reg [2:0]   shift_TOVR_r1               /*synthesis syn_preserve = 1*/;  // the shift register for interrupt
     // Logic definition
         // page control signal definition
             wire        ConfigEn_w;
@@ -155,71 +163,101 @@ module CtrlCore(
             wire        EndSel_w;
             wire        ParEn_w;
             wire        ParSel_w;
+        // Interrupt signal logic definition
+            wire        p_Irq_TOVR_w;
+            wire        p_Irq_TNFUL_w;
+            wire        p_Irq_TTRIG_w;
+            wire        p_Irq_TIMEOUT_w;
+            wire        p_Irq_PARE_w;
+            wire        p_Irq_FRAME_w;
+            wire        p_Irq_ROVR_w;
+            wire        p_Irq_TFUL_w;
+            wire        p_Irq_TEMPTY_w;
+            wire        p_Irq_RFULL_w;
+            wire        p_Irq_REMPTY_w;
+            wire        p_Irq_RTRIG_w;
         // Bus control signal logic
             wire        ChipWriteAccess_w;      // The chip selected signal and write signal available together.
             wire        ChipReadAccess_w;       // The chip selected signal and read signal available together.
         // Register write access available
-            wire        UartControl_Write_Access_w;   
+            wire        UartControl_Write_Access_w;
+            wire        TxDataPort_Write_Access_w;
             wire        UartMode_Write_Access_w;
             wire        BaudGeneratorHigh_Write_Access_w;
             wire        BaudGeneratorLow_Write_Access_w;
             wire        BitCompensateMethod_Write_Access_w;
             wire        InterrputEnable1_Write_Access_w;
             wire        InterrputEnable2_Write_Access_w;
-            wire        InterruptMask1_Write_Access_w;
-            wire        InterruptMask2_Write_Access_w;
             wire        RxTrigLevelHigh_Write_Access_w;
             wire        RxTrigLevelLow_Write_Access_w;
             wire        TxTrigLevelHigh_Write_Access_w;
             wire        TxTrigLevelLow_Write_Access_w;
+            wire        ReceiveTimeOutLvlHigh_Write_Access_w;
+            wire        ReceiveTimeOutLvlLow_Write_Access_w;
             wire        InterruptStatus1_Write_Access_w;
             wire        InterruptStatus2_Write_Access_w;
-            wire        BytesNumberReceived1_Write_Access_w;
-            wire        BytesNumberReceived2_Write_Access_w;
-            wire        UartStatus1_Write_Access_w;
-            wire        UartStatus2_Write_Access_w;
-            wire        RxDataPort_Write_Access_w;
-            wire        TxDataPort_Write_Access_w; 
-        // Register read access avaulable logic
+        // Register read access available logic
             wire        UartControl_Read_Access_w;
+            wire        UartStatus1_Read_Access_w;
+            wire        UartStatus2_Read_Access_w;
+            wire        RxDataPort_Read_Access_w;
             wire        UartMode_Read_Access_w;
             wire        BaudGeneratorHigh_Read_Access_w;
             wire        BaudGeneratorLow_Read_Access_w;
             wire        BitCompensateMethod_Read_Access_w;
+            wire        InterruptMask1_Read_Access_w;
+            wire        InterruptMask2_Read_Access_w;
             wire        RxTrigLevelHigh_Read_Access_w;
             wire        RxTrigLevelLow_Read_Access_w;
             wire        TxTrigLevelHigh_Read_Access_w;
             wire        TxTrigLevelLow_Read_Access_w;
+            wire        ReceiveTimeOutLvlHigh_Read_Access_w;
+            wire        ReceiveTimeOutLvlLow_Read_Access_w;
             wire        InterruptStatus1_Read_Access_w;
             wire        InterruptStatus2_Read_Access_w;
             wire        BytesNumberReceived1_Read_Access_w;
             wire        BytesNumberReceived2_Read_Access_w;
-            wire        UartStatus1_Read_Access_w;
-            wire        UartStatus2_Read_Access_w;
-            wire        RxDataPort_Read_Access_w;        
+            wire        FrameFifoStatus_Read_Access_w;
+            wire        FrameBytesNumberHigh_Read_Access_w;
+            wire        FrameBytesNumberLow_Read_Access_w;
+            wire        FrameTimeStampInfo1_Read_Access_w;
+            wire        FrameTimeStampInfo2_Read_Access_w;
+            wire        FrameAnsTimeInfo1_Read_Access_w;
+            wire        FrameAnsTimeInfo2_Read_Access_w;
+            wire        ReservedAddr3_Read_Access_w;
     // parameter
         // Address definition
-            parameter   ADDR_UartControl                = 3'b000;
-            parameter   ADDR_UartMode                   = 3'b001;
-            parameter   ADDR_BaudGeneratorHigh          = 3'b010;
-            parameter   ADDR_BaudGeneratorLow           = 3'b011;
-            parameter   ADDR_BitCompensateMethod        = 3'b100;
-            parameter   ADDR_InterrputEnable1           = 3'b001;
-            parameter   ADDR_InterrputEnable2           = 3'b010;
-            parameter   ADDR_InterruptMask1             = 3'b011;
-            parameter   ADDR_InterruptMask2             = 3'b100;
-            parameter   ADDR_RxTrigLevelHigh            = 3'b001;
-            parameter   ADDR_RxTrigLevelLow             = 3'b010;
-            parameter   ADDR_TxTrigLevelHigh            = 3'b011;
-            parameter   ADDR_TxTrigLevelLow             = 3'b100;
-            parameter   ADDR_InterruptStatus1           = 3'b001;
-            parameter   ADDR_InterruptStatus2           = 3'b010;
-            parameter   ADDR_BytesNumberReceived1       = 3'b011;
-            parameter   ADDR_BytesNumberReceived2       = 3'b100;
-            parameter   ADDR_UartStatus1                = 3'b101;
-            parameter   ADDR_UartStatus2                = 3'b110;
-            parameter   ADDR_RxDataPort                 = 3'b111;
-            parameter   ADDR_TxDataPort                 = 3'b111;
+            parameter   ADDR_UartControl                = 4'b0000;
+            parameter   ADDR_UartStatus1                = 4'b0001;
+            parameter   ADDR_UartStatus2                = 4'b0010;
+            parameter   ADDR_RxDataPort                 = 4'b0011;
+            parameter   ADDR_TxDataPort                 = 4'b0011;
+            parameter   ADDR_UartMode                   = 4'b0100;
+            parameter   ADDR_BaudGeneratorHigh          = 4'b0101;
+            parameter   ADDR_BaudGeneratorLow           = 4'b0110;
+            parameter   ADDR_BitCompensateMethod        = 4'b0111;
+            parameter   ADDR_InterrputEnable1           = 4'b1000;
+            parameter   ADDR_InterrputEnable2           = 4'b1001;
+            parameter   ADDR_InterruptMask1             = 4'b1000;
+            parameter   ADDR_InterruptMask2             = 4'b1001;
+            parameter   ADDR_RxTrigLevelHigh            = 4'b1010;
+            parameter   ADDR_RxTrigLevelLow             = 4'b1011;
+            parameter   ADDR_TxTrigLevelHigh            = 4'b1100;
+            parameter   ADDR_TxTrigLevelLow             = 4'b1101;
+            parameter   ADDR_ReceiveTimeOutHigh         = 4'b1110;
+            parameter   ADDR_ReceiveTimeOutLow          = 4'b1111;
+            parameter   ADDR_InterruptStatus1           = 4'b0100;
+            parameter   ADDR_InterruptStatus2           = 4'b0101;
+            parameter   ADDR_BytesNumberReceived1       = 4'b0110;
+            parameter   ADDR_BytesNumberReceived2       = 4'b0111;
+            parameter   ADDR_FrameFifoStatus            = 4'b1000;
+            parameter   ADDR_FrameBytesNumberHigh       = 4'b1001;
+            parameter   ADDR_FrameBytesNumberLow        = 4'b1010;
+            parameter   ADDR_FrameTimeStampInfo1        = 4'b1011;
+            parameter   ADDR_FrameTimeStampInfo2        = 4'b1100;
+            parameter   ADDR_FrameAnsTimeInfo1          = 4'b1101;
+            parameter   ADDR_FrameAnsTimeInfo2          = 4'b1110;
+            parameter   ADDR_ReservedAddr3              = 4'b1111;
         // Function definition
             parameter   ON      = 1'b1;
             parameter   OFF     = 1'b0;
@@ -227,14 +265,8 @@ module CtrlCore(
             parameter   N_OFF   = 1'b1;
             // UartControl bit 
                 // ConfigEN
-                    parameter   UartControl_ConfigEn_ON     = 1'b1;   // In this state the cpu cound access the uart port configuration register
-                    parameter   UartControl_ConfigEn_OFF    = 1'b0;   // In this state the cpu access the uart port normal opperation register
-                // IrqConfigEn
-                    parameter   UartControl_IrqConfigEn_ON  = 1'b1;
-                    parameter   UartControl_IrqConfigEn_OFF = 1'b0;
-                // IrqLvlEn
-                    parameter   UartControl_IrqLvlEn_ON     = 1'b1;
-                    parameter   UartControl_IrqLvlEn_OFF    = 1'b0;
+                    parameter   UartControl_ConfigEn_ON     = 1'b1;   // In this state the cpu could access the uart port configuration register
+                    parameter   UartControl_ConfigEn_OFF    = 1'b0;   // In this state the cpu access the uart port normal operation register
                 // ClkSel
                     parameter   UartControl_ClkSel_Time1    = 1'b0;
                     parameter   UartControl_ClkSel_Time8    = 1'b1;
@@ -248,8 +280,8 @@ module CtrlCore(
                 // ModeSel  --UartMode Definition 
                     parameter   UartMode_NORMAL             = 4'b0001;    // Normal mode, tx port sends data and rx port receives data
                     parameter   UartMode_AUTO_ECHO          = 4'b0010;    // Automatic echo mode, rx port receives data and transfer to tx port
-                    parameter   UartMode_LOCAL_LOOPBACK     = 4'b0100;    // Local loopback mode, rx port connected to the tx port directly would not send out
-                    parameter   UartMode_REMOTE_LOOPBACK    = 4'b1000;    // Remote loopback mode, the input io and output io of uart was connected directly  
+                    parameter   UartMode_LOCAL_LOOPBACK     = 4'b0100;    // Local loop-back mode, rx port connected to the tx port directly would not send out
+                    parameter   UartMode_REMOTE_LOOPBACK    = 4'b1000;    // Remote loop-back mode, the input io and output io of uart was connected directly  
                 // EndSel
                     parameter   UartMode_BIGEND             = 1'b1;
                     parameter   UartMode_LITTLEEND          = 1'b0;    
@@ -303,8 +335,6 @@ module CtrlCore(
     // Logic assign definition
         // page control signal definition
             assign ConfigEn_w       = UartControl_r1[7];
-            assign IrqConfigEn_w    = UartControl_r1[6];
-            assign IrqLvlEn_w       = UartControl_r1[5];
         // control signal definition
             assign ClkSel_w         = UartControl_r1[4];
             assign RxEn_w           = UartControl_r1[3];
@@ -313,46 +343,73 @@ module CtrlCore(
             assign EndSel_w         = UartMode_r1[3];
             assign ParEn_w          = UartMode_r1[2];
             assign ParSel_w         = UartMode_r1[1];
+        // Interrupt signal logic
+            assign p_Irq_TOVR_w     = InterruptState_r1[12];
+            assign p_Irq_TNFUL_w    = InterruptState_r1[11];
+            assign p_Irq_TTRIG_w    = InterruptState_r1[10];
+            assign p_Irq_TIMEOUT_w  = InterruptState_r1[8];
+            assign p_Irq_PARE_w     = InterruptState_r1[7];
+            assign p_Irq_FRAME_w    = InterruptState_r1[6];
+            assign p_Irq_ROVR_w     = InterruptState_r1[5];
+            assign p_Irq_TFUL_w     = InterruptState_r1[4];
+            assign p_Irq_TEMPTY_w   = InterruptState_r1[3];
+            assign p_Irq_RFULL_w    = InterruptState_r1[2];
+            assign p_Irq_REMPTY_w   = InterruptState_r1[1];
+            assign p_Irq_RTRIG_w    = InterruptState_r1[0];
         // Bus control signal logic 
             assign ChipWriteAccess_w                    = (n_ChipSelect_i == 1'b0) && (n_we_i == 1'b0);
             assign ChipReadAccess_w                     = (n_ChipSelect_i == 1'b0) && (n_rd_i == 1'b0);
         // Register write access available logic definition
-            assign UartControl_Write_Access_w           = ChipWriteAccess_w && (AddrBus_i == ADDR_UartControl);  
-            assign UartMode_Write_Access_w              = ChipWriteAccess_w && (AddrBus_i == ADDR_UartMode              ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);   
-            assign BaudGeneratorHigh_Write_Access_w     = ChipWriteAccess_w && (AddrBus_i == ADDR_BaudGeneratorHigh     ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign BaudGeneratorLow_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_BaudGeneratorLow      ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign BitCompensateMethod_Write_Access_w   = ChipWriteAccess_w && (AddrBus_i == ADDR_BitCompensateMethod   ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign InterrputEnable1_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_InterrputEnable1      ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == OFF);
-            assign InterrputEnable2_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_InterrputEnable2      ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == OFF);
-            assign RxTrigLevelHigh_Write_Access_w       = ChipWriteAccess_w && (AddrBus_i == ADDR_RxTrigLevelHigh       ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == ON );
-            assign RxTrigLevelLow_Write_Access_w        = ChipWriteAccess_w && (AddrBus_i == ADDR_RxTrigLevelLow        ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == ON );
-            assign TxTrigLevelHigh_Write_Access_w       = ChipWriteAccess_w && (AddrBus_i == ADDR_TxTrigLevelHigh       ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == ON );
-            assign TxTrigLevelLow_Write_Access_w        = ChipWriteAccess_w && (AddrBus_i == ADDR_TxTrigLevelLow        ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == ON );
-            assign InterruptStatus1_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_InterruptStatus1      ) && (ConfigEn_w == OFF) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign InterruptStatus2_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_InterruptStatus2      ) && (ConfigEn_w == OFF) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign TxDataPort_Write_Access_w            = ChipWriteAccess_w && (AddrBus_i == ADDR_TxDataPort);  
+            assign UartControl_Write_Access_w           = ChipWriteAccess_w && (AddrBus_i == ADDR_UartControl           );
+            assign TxDataPort_Write_Access_w            = ChipWriteAccess_w && (AddrBus_i == ADDR_TxDataPort            );
+            assign UartMode_Write_Access_w              = ChipWriteAccess_w && (AddrBus_i == ADDR_UartMode              ) && (ConfigEn_w == ON  );
+            assign BaudGeneratorHigh_Write_Access_w     = ChipWriteAccess_w && (AddrBus_i == ADDR_BaudGeneratorHigh     ) && (ConfigEn_w == ON  );
+            assign BaudGeneratorLow_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_BaudGeneratorLow      ) && (ConfigEn_w == ON  );
+            assign BitCompensateMethod_Write_Access_w   = ChipWriteAccess_w && (AddrBus_i == ADDR_BitCompensateMethod   ) && (ConfigEn_w == ON  );
+            assign InterrputEnable1_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_InterrputEnable1      ) && (ConfigEn_w == ON  );
+            assign InterrputEnable2_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_InterrputEnable2      ) && (ConfigEn_w == ON  );
+            assign RxTrigLevelHigh_Write_Access_w       = ChipWriteAccess_w && (AddrBus_i == ADDR_RxTrigLevelHigh       ) && (ConfigEn_w == ON  );
+            assign RxTrigLevelLow_Write_Access_w        = ChipWriteAccess_w && (AddrBus_i == ADDR_RxTrigLevelLow        ) && (ConfigEn_w == ON  );
+            assign TxTrigLevelHigh_Write_Access_w       = ChipWriteAccess_w && (AddrBus_i == ADDR_TxTrigLevelHigh       ) && (ConfigEn_w == ON  );
+            assign TxTrigLevelLow_Write_Access_w        = ChipWriteAccess_w && (AddrBus_i == ADDR_TxTrigLevelLow        ) && (ConfigEn_w == ON  );
+            assign ReceiveTimeOutLvlHigh_Write_Access_w = ChipWriteAccess_w && (AddrBus_i == ADDR_ReceiveTimeOutHigh    ) && (ConfigEn_w == ON  );
+            assign ReceiveTimeOutLvlLow_Write_Access_w  = ChipWriteAccess_w && (AddrBus_i == ADDR_ReceiveTimeOutLow     ) && (ConfigEn_w == ON  );
+            assign InterruptStatus1_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_InterruptStatus1      ) && (ConfigEn_w == OFF );
+            assign InterruptStatus2_Write_Access_w      = ChipWriteAccess_w && (AddrBus_i == ADDR_InterrputEnable2      ) && (ConfigEn_w == OFF );           
         // Register read access available logic definition
-            assign UartControl_Read_Access_w            = ChipReadAccess_w  && (AddrBus_i == ADDR_UartControl);
-            assign UartMode_Read_Access_w               = ChipReadAccess_w  && (AddrBus_i == ADDR_UartMode              ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign BaudGeneratorHigh_Read_Access_w      = ChipReadAccess_w  && (AddrBus_i == ADDR_BaudGeneratorHigh     ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign BaudGeneratorLow_Read_Access_w       = ChipReadAccess_w  && (AddrBus_i == ADDR_BaudGeneratorLow      ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign BitCompensateMethod_Read_Access_w    = ChipReadAccess_w  && (AddrBus_i == ADDR_BitCompensateMethod   ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign RxTrigLevelHigh_Read_Access_w        = ChipReadAccess_w  && (AddrBus_i == ADDR_RxTrigLevelHigh       ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == ON );
-            assign RxTrigLevelLow_Read_Access_w         = ChipReadAccess_w  && (AddrBus_i == ADDR_RxTrigLevelLow        ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == ON );
-            assign TxTrigLevelHigh_Read_Access_w        = ChipReadAccess_w  && (AddrBus_i == ADDR_TxTrigLevelHigh       ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == ON );
-            assign TxTrigLevelLow_Read_Access_w         = ChipReadAccess_w  && (AddrBus_i == ADDR_TxTrigLevelLow        ) && (ConfigEn_w == ON ) && (IrqConfigEn_w == ON ) && (IrqLvlEn_w == ON );
-            assign InterruptStatus1_Read_Access_w       = ChipReadAccess_w  && (AddrBus_i == ADDR_InterruptStatus1      ) && (ConfigEn_w == OFF) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign InterruptStatus2_Read_Access_w       = ChipReadAccess_w  && (AddrBus_i == ADDR_InterruptStatus2      ) && (ConfigEn_w == OFF) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign BytesNumberReceived1_Read_Access_w   = ChipReadAccess_w  && (AddrBus_i == ADDR_BytesNumberReceived1  ) && (ConfigEn_w == OFF) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign BytesNumberReceived2_Read_Access_w   = ChipReadAccess_w  && (AddrBus_i == ADDR_BytesNumberReceived2  ) && (ConfigEn_w == OFF) && (IrqConfigEn_w == OFF) && (IrqLvlEn_w == OFF);
-            assign UartStatus1_Read_Access_w            = ChipReadAccess_w  && (AddrBus_i == ADDR_UartStatus1);
-            assign UartStatus2_Read_Access_w            = ChipReadAccess_w  && (AddrBus_i == ADDR_UartStatus2);
-            assign RxDataPort_Read_Access_w             = ChipReadAccess_w  && (AddrBus_i == ADDR_RxDataPort);
+            assign UartControl_Read_Access_w            = ChipReadAccess_w  && (AddrBus_i == ADDR_UartControl           );
+            assign UartStatus1_Read_Access_w            = ChipReadAccess_w  && (AddrBus_i == ADDR_UartStatus1           );
+            assign UartStatus2_Read_Access_w            = ChipReadAccess_w  && (AddrBus_i == ADDR_UartStatus2           );
+            assign RxDataPort_Read_Access_w             = ChipReadAccess_w  && (AddrBus_i == ADDR_RxDataPort            );
+            assign UartMode_Read_Access_w               = ChipReadAccess_w  && (AddrBus_i == ADDR_UartMode              ) && (ConfigEn_w == ON  );
+            assign BaudGeneratorHigh_Read_Access_w      = ChipReadAccess_w  && (AddrBus_i == ADDR_BaudGeneratorHigh     ) && (ConfigEn_w == ON  );
+            assign BaudGeneratorLow_Read_Access_w       = ChipReadAccess_w  && (AddrBus_i == ADDR_BaudGeneratorLow      ) && (ConfigEn_w == ON  );
+            assign BitCompensateMethod_Read_Access_w    = ChipReadAccess_w  && (AddrBus_i == ADDR_BitCompensateMethod   ) && (ConfigEn_w == ON  );
+            assign InterruptMask1_Read_Access_w         = ChipReadAccess_w  && (AddrBus_i == ADDR_InterruptMask1        ) && (ConfigEn_w == ON  );
+            assign InterruptMask2_Read_Access_w         = ChipReadAccess_w  && (AddrBus_i == ADDR_InterruptMask2        ) && (ConfigEn_w == ON  );
+            assign RxTrigLevelHigh_Read_Access_w        = ChipReadAccess_w  && (AddrBus_i == ADDR_RxTrigLevelHigh       ) && (ConfigEn_w == ON  );
+            assign RxTrigLevelLow_Read_Access_w         = ChipReadAccess_w  && (AddrBus_i == ADDR_RxTrigLevelLow        ) && (ConfigEn_w == ON  );
+            assign TxTrigLevelHigh_Read_Access_w        = ChipReadAccess_w  && (AddrBus_i == ADDR_TxTrigLevelHigh       ) && (ConfigEn_w == ON  );
+            assign TxTrigLevelLow_Read_Access_w         = ChipReadAccess_w  && (AddrBus_i == ADDR_TxTrigLevelLow        ) && (ConfigEn_w == ON  );
+            assign ReceiveTimeOutLvlHigh_Read_Access_w  = ChipReadAccess_w  && (AddrBus_i == ADDR_ReceiveTimeOutHigh    ) && (ConfigEn_w == ON  );
+            assign ReceiveTimeOutLvlLow_Read_Access_w   = ChipReadAccess_w  && (AddrBus_i == ADDR_ReceiveTimeOutLow     ) && (ConfigEn_w == ON  );
+            assign InterruptStatus1_Read_Access_w       = ChipReadAccess_w  && (AddrBus_i == ADDR_InterruptStatus1      ) && (ConfigEn_w == OFF );
+            assign InterruptStatus2_Read_Access_w       = ChipReadAccess_w  && (AddrBus_i == ADDR_InterruptStatus2      ) && (ConfigEn_w == OFF );
+            assign BytesNumberReceived1_Read_Access_w   = ChipReadAccess_w  && (AddrBus_i == ADDR_BytesNumberReceived1  ) && (ConfigEn_w == OFF );
+            assign BytesNumberReceived2_Read_Access_w   = ChipReadAccess_w  && (AddrBus_i == ADDR_BytesNumberReceived2  ) && (ConfigEn_w == OFF );
+            assign FrameFifoStatus_Read_Access_w        = ChipReadAccess_w  && (AddrBus_i == ADDR_FrameFifoStatus       ) && (ConfigEn_w == OFF );
+            assign FrameBytesNumberHigh_Read_Access_w   = ChipReadAccess_w  && (AddrBus_i == ADDR_FrameBytesNumberHigh  ) && (ConfigEn_w == OFF );
+            assign FrameBytesNumberLow_Read_Access_w    = ChipReadAccess_w  && (AddrBus_i == ADDR_FrameBytesNumberLow   ) && (ConfigEn_w == OFF );
+            assign FrameTimeStampInfo1_Read_Access_w    = ChipReadAccess_w  && (AddrBus_i == ADDR_FrameTimeStampInfo1   ) && (ConfigEn_w == OFF );
+            assign FrameTimeStampInfo2_Read_Access_w    = ChipReadAccess_w  && (AddrBus_i == ADDR_FrameTimeStampInfo2   ) && (ConfigEn_w == OFF );
+            assign FrameAnsTimeInfo1_Read_Access_w      = ChipReadAccess_w  && (AddrBus_i == ADDR_FrameAnsTimeInfo1     ) && (ConfigEn_w == OFF );
+            assign FrameAnsTimeInfo2_Read_Access_w      = ChipReadAccess_w  && (AddrBus_i == ADDR_FrameAnsTimeInfo2     ) && (ConfigEn_w == OFF );
+            assign ReservedAddr3_Read_Access_w          = ChipReadAccess_w  && (AddrBus_i == ADDR_ReservedAddr3         ) && (ConfigEn_w == OFF );            
         // output port logic definition
             assign DataBus_o            = DataBus_r1;
             assign p_TxCoreEn_o         = TxEn_w;
             assign TxData_o             = DataBus_i;
-            assign n_TxFIFO_We_o        = n_TxFIFO_We_r1;
+            assign n_TxFIFO_We_o        = (TxFIFO_We_r1[2] == N_OFF) && (TxFIFO_We_r1[1] == N_ON);     // falling edge of the TxDataPort_Write_Access_w trigger the write operation
             assign n_TxFIFO_Clr_o       = ~p_TxRst_r1; 
             assign p_RxCoreEn_o         = RxEn_w;
             // assign n_RxFIFO_Rd_o        = ;    // the read signal is generated from the bus access 
@@ -365,10 +422,8 @@ module CtrlCore(
     // UartControl register fresh 
         always @(posedge clk or negedge rst) begin
             if (!rst) begin    // Initial state
-                UartControl_r1  <= { UartControl_ConfigEn_ON,    UartControl_IrqConfigEn_OFF, 
-                                    UartControl_IrqLvlEn_OFF,   UartControl_ClkSel_Time1,
-                                    UartControl_RxEn_OFF,       UartControl_TxEn_OFF,
-                                    2'b00
+                UartControl_r1  <= {    UartControl_ConfigEn_ON,    OFF,                    OFF,    UartControl_ClkSel_Time1,
+                                        UartControl_RxEn_OFF,       UartControl_TxEn_OFF,   OFF,    OFF
                                     };
                 p_RxRst_r1      <= OFF;
                 p_TxRst_r1      <= OFF;                              
@@ -398,7 +453,7 @@ module CtrlCore(
                 UartMode_r1     <= UartMode_r1;
             end
         end
-    // BaudGeneratorHigh register fresh
+    // BaudGenerator register fresh
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
                 BaudGenerator_r1[15:8] <= DEFAULT_PERIOD[15:8];
@@ -410,7 +465,6 @@ module CtrlCore(
                 BaudGenerator_r1[15:8] <= BaudGenerator_r1[15:8];
             end
         end
-    // BaudGeneratorLow register fresh
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
                 BaudGenerator_r1[7:0]  <= DEFAULT_PERIOD[7:0];
@@ -513,25 +567,16 @@ module CtrlCore(
                 TxTrigLevel_r1[7:0] <= TxTrigLevel_r1[7:0];
             end
         end
-    // TxData fresh
+    // TxData fresh, generate the TX FIFO WR signal
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                n_TxFIFO_We_r1 <= N_OFF;
+                TxFIFO_We_r1   <= {N_OFF, N_OFF, N_OFF};
             end
             else if (TxDataPort_Write_Access_w == ON) begin
-                n_TxFIFO_We_r1 <= N_ON;
+                TxFIFO_We_r1   <= {TxFIFO_We_r1[1:0], N_ON};
             end
             else begin
-                n_TxFIFO_We_r1 <= N_OFF;
-            end
-        end
-    // Interrupt status generater
-        always @(posedge clk or negedge rst) begin
-            if (!rst) begin
-                InterruptState_r1 <= 16'd0;   // no interrupt generate
-            end
-            else if () begin
-                
+                TxFIFO_We_r1   <= {TxFIFO_We_r1[1:0], N_OFF};
             end
         end
     // Bytes number in fifo fresh
@@ -557,55 +602,128 @@ module CtrlCore(
                 BytesNumberInTxFifo_r1 <= 16'd0
             end
         end
-    // Read data operation 
+    // Receive Time Out buffer fresh
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-               DataBus_r1 <= 8'hff;              
+                ReceiveTimeOutLvl_r1[15:8] <= 8'd0;
+            end
+            else if (ReceiveTimeOutLvlHigh_Write_Access_w == ON ) begin
+                ReceiveTimeOutLvl_r1[15:8] <= DataBus_i;
+            end
+            else begin
+                ReceiveTimeOutLvl_r1[15:8] <= ReceiveTimeOutLvl_r1[15:8];
+            end
+        end
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                ReceiveTimeOutLvl_r1[7:0] <= 8'd0;
+            end
+            else if (ReceiveTimeOutLvlLow_Write_Access_w == ON ) begin
+                ReceiveTimeOutLvl_r1[7:0] <= DataBus_i;
+            end
+            else begin
+                ReceiveTimeOutLvl_r1[7:0] <= ReceiveTimeOutLvl_r1[7:0];
+            end
+        end
+    // Bus Read data operation 
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                DataBus_r1 <= 8'hff;              
             end
             else if (UartControl_Read_Access_w == ON) begin
-               DataBus_r1 <= UartControl_r1;
-            end
-            else if (UartMode_Read_Access_w == ON ) begin
-               DataBus_r1 <= UartMode_r1;
-            end
-            else if (BaudGeneratorHigh_Read_Access_w == ON ) begin
-               DataBus_r1 <= BaudGenerator_r1[15:8];
-            end
-            else if (BaudGeneratorLow_Read_Access_w == ON ) begin
-               DataBus_r1 <= BaudGenerator_r1[7:0];
-            end
-            else if (BitCompensateMethod_Read_Access_w == ON ) begin
-               DataBus_r1 <= BitCompensateMethod_r1;
-            end
-            else if (RxTrigLevelHigh_Read_Access_w == ON ) begin
-               DataBus_r1 <= RxTrigLevel_r1[15:8];
-            end
-            else if (RxTrigLevelLow_Read_Access_w == ON ) begin
-               DataBus_r1 <= RxTrigLevel_r1[7:0];
-            end
-            else if (TxTrigLevelHigh_Read_Access_w == ON ) begin
-               DataBus_r1 <= TxTrigLevel_r1[15:8];
-            end
-            else if (TxTrigLevelLow_Read_Access_w == ON ) begin
-               DataBus_r1 <= TxTrigLevel_r1[7:0];
-            end
-            else if (InterruptStatus1_Read_Access_w == ON ) begin
-               DataBus_r1 <= InterruptState_r1[15:8];
-            end
-            else if (InterruptStatus2_Read_Access_w == ON ) begin
-               DataBus_r1 <= InterruptState_r1[7:0];
-            end
-            else if (BytesNumberReceived1_Read_Access_w == ON ) begin
-               DataBus_r1 <= BytesNumberInRxFifo_r1[15:8];
-            end
-            else if (BytesNumberReceived2_Read_Access_w == ON ) begin
-               DataBus_r1 <= BytesNumberInRxFifo_r1[7:0];
+                DataBus_r1 <= UartControl_r1;
             end
             else if (UartStatus1_Read_Access_w == ON ) begin
-               DataBus_r1 <= UartState_r1[15:8];
+                DataBus_r1 <= UartState_r1[15:8];
             end
             else if (UartStatus2_Read_Access_w == ON ) begin
-               DataBus_r1 <= UartState_r1[7:0];
+                DataBus_r1 <= UartState_r1[7:0];
             end
+            else if (RxDataPort_Read_Access_w == ON) begin
+                // think about the 
+            end
+            else if (UartMode_Read_Access_w == ON ) begin
+                DataBus_r1 <= UartMode_r1;
+            end
+            else if (BaudGeneratorHigh_Read_Access_w == ON ) begin
+                DataBus_r1 <= BaudGenerator_r1[15:8];
+            end
+            else if (BaudGeneratorLow_Read_Access_w == ON ) begin
+                DataBus_r1 <= BaudGenerator_r1[7:0];
+            end
+            else if (BitCompensateMethod_Read_Access_w == ON ) begin
+                DataBus_r1 <= BitCompensateMethod_r1;
+            end
+            else if (InterruptMask1_Read_Access_w == ON ) begin
+                DataBus_r1 <= InterruptMask_r1[15:8];
+            end
+            else if (InterruptMask2_Read_Access_w == ON ) begin
+                DataBus_r1 <= InterruptMask_r1[7:0];
+            end
+            else if (RxTrigLevelHigh_Read_Access_w == ON ) begin
+                DataBus_r1 <= RxTrigLevel_r1[15:8];
+            end
+            else if (RxTrigLevelLow_Read_Access_w == ON ) begin
+                DataBus_r1 <= RxTrigLevel_r1[7:0];
+            end
+            else if (TxTrigLevelHigh_Read_Access_w == ON ) begin
+                DataBus_r1 <= TxTrigLevel_r1[15:8];
+            end
+            else if (TxTrigLevelLow_Read_Access_w == ON ) begin
+                DataBus_r1 <= TxTrigLevel_r1[7:0];
+            end
+            else if (ReceiveTimeOutLvlHigh_Read_Access_w == ON ) begin
+                DataBus_r1 <= ReceiveTimeOutLvl_r1[15:8];
+            end
+            else if (ReceiveTimeOutLvlLow_Read_Access_w == ON ) begin
+                DataBus_r1 <= ReceiveTimeOutLvl_r1[7:0];
+            end
+            else if (InterruptStatus1_Read_Access_w == ON ) begin
+                DataBus_r1 <= InterruptState_r1[15:8];
+            end
+            else if (InterruptStatus2_Read_Access_w == ON ) begin
+                DataBus_r1 <= InterruptState_r1[7:0];
+            end
+            else if (BytesNumberReceived1_Read_Access_w == ON ) begin
+                DataBus_r1 <= BytesNumberInRxFifo_r1[15:8];
+            end
+            else if (BytesNumberReceived2_Read_Access_w == ON ) begin
+                DataBus_r1 <= BytesNumberInRxFifo_r1[7:0];
+            end
+            else if (FrameFifoStatus_Read_Access_w == ON ) begin
+                // Think about it 
+            end
+            else if (FrameBytesNumberHigh_Read_Access_w == ON ) begin
+                // Think about it 
+            end
+            else if (FrameBytesNumberLow_Read_Access_w == ON ) begin
+                // Think about the fifo operation
+            end
+            else if (FrameTimeStampInfo1_Read_Access_w == ON ) begin
+                // Think about the fifo operation
+            end
+            else if (FrameTimeStampInfo2_Read_Access_w == ON ) begin
+                // Think about the fifo operation
+            end
+            else if (FrameAnsTimeInfo1_Read_Access_w == ON ) begin
+                // Think about the fifo operation
+            end
+            else if (FrameAnsTimeInfo2_Read_Access_w == ON ) begin
+                // Think about the fifo operation
+            end
+            else if (ReservedAddr3_Read_Access_w == ON ) begin
+                // Think about the fifo operation
+            end
+            
          end 
+    // Interrupt Signal generator
+        // TOVR, transmission fifo overflow interrupt
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                InterruptState_r1[12] <= IRQ_TOVR_OFF;   // no interrupt generate
+            end
+            else if () begin
+                
+            end
+        end
 endmodule

@@ -56,27 +56,27 @@
 //    4'b0111 |    7    |     1    | R/W |  BitCompensateMethod  |         Round Up Period number in a bit       |       Round Down Period number in a bit       |
 //    4'b1000 |    8    |     1    |  W  |    InterrputEnable1   | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |  TIMEOUT  |
 //    4'b1001 |    9    |     1    |  W  |    InterrputEnable2   |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
-//    4'b1000 |    8    |     1    |  R  |    InterruptMask1     | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |
+//    4'b1000 |    8    |     1    |  R  |    InterruptMask1     | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |  TIMEOUT  |
 //    4'b1001 |    9    |     1    |  R  |    InterruptMask2     |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   |
 //    4'b1010 |    10   |     1    | R/W |    RxTrigLevelHigh    | High 8 bits of the rx fifo trigger level                                                      |      
 //    4'b1011 |    11   |     1    | R/W |    RxTrigLevelLow     | Low 8 bits of the rx fifo trigger level                                                       |
 //    4'b1100 |    12   |     1    | R/W |    TxTrigLevelHigh    | High 8 bits of the tx fifo trigger level                                                      |    
 //    4'b1101 |    13   |     1    | R/W |    TxTrigLevelLow     | Low 8 bits of the tx fifo trigger level                                                       |
-//    4'b1110 |    14   |     1    | R/W |   ReceiveTimeOutHigh  | Receive time out value                                                                                                 |
+//    4'b1110 |    14   |     1    | R/W |   ReceiveTimeOutHigh  | Receive time out value                                                                        |
 //    4'b1111 |    15   |     1    | R/W |   ReceiveTimeOutLow   | Receive time out value                                                                        |
 //   ---------|---------|----------|-----|-----------------------|-----B7----|-----B6----|-----B5----|-----B4----|-----B3----|-----B2----|-----B1----|-----B0----|
-//    4'b0100 |    4    |     0    | R/W |   InterruptStatus1    | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |   TOUT    |     
+//    4'b0100 |    4    |     0    | R/W |   InterruptStatus1    | Reserved  | Reserved  | Reserved  |    TOVR   |   TNFUL   |   TTRIG   | Reserved  |  TIMEOUT  |     
 //    4'b0101 |    5    |     0    | R/W |   InterruptStatus2    |    PARE   |   FRAME   |   ROVR    |    TFUL   |  TEMPTY   |   RFULL   |  REMPTY   |   RTRIG   | 
 //    4'b0110 |    6    |     0    |  R  | BytesNumberReceived1  |   High 8 bits of the bytes' number in receive fifo                                            |
 //    4'b0111 |    7    |     0    |  R  | BytesNumberReceived2  |   Low 8 bits of the bytes' number in receive fifo                                             |
-//    4'b1000 |    8    |     0    |  R  |    FrameFifoStatus    |     
+//    4'b1000 |    8    |     0    |  R  |    FrameFifoStatus    |     cmd                                                                                       |
 //    4'b1001 |    9    |     0    |  R  |  FrameBytesNumberHigh | The frame bytes number of this frame                                                          |
 //    4'b1010 |    10   |     0    |  R  |  FrameBytesNumberLow  | The frame bytes number of this frame                                                          |
 //    4'b1011 |    11   |     0    |  R  |  FrameTimeStampInfo1  | Millisecond time stamp of this frame low 8 bits                                               |      
 //    4'b1100 |    12   |     0    |  R  |  FrameTimeStampInfo2  | Millisecond time stamp high 4 bits            | MicroSecond time stamp 4 bits width           |
-//    4'b1101 |    13   |     0    |  R  |   FrameAnsTimeInfo1   | 
-//    4'b1110 |    14   |     0    |  R  |   FrameAnsTimeInfo2   | 
-//    4'b1111 |    15   |     0    |  R  |     ReservedAddr3     |   
+//    4'b1101 |    13   |     0    |  R  |   FrameAnsTimeInfo1   |                                                                                               |
+//    4'b1110 |    14   |     0    |  R  |   FrameAnsTimeInfo2   |                                                                                               |
+//    4'b1111 |    15   |     0    |  R  |     ReservedAddr3     |                                                                                               |  
 // Note:  
 // 2020-05-30  The Receive fifo operation should be careful. In my opinion, the data read operation in the bus may be delay a clk. Due to the delay of the fifo read
 //              operation. It is better to think about it carefully and added into the datasheet
@@ -85,7 +85,7 @@ module CtrlCore(
     input   clk,
     input   rst,
     // The bus interface
-        input  [2:0]    AddrBus_i,                  // the input address bus
+        input  [3:0]    AddrBus_i,                  // the input address bus
         input           n_ChipSelect_i,             // the chip select signal
         input           n_rd_i,                     // operation direction control signal read direction, negative enable
         input           n_we_i,                     // operation direction control signal write direction, negative enable
@@ -115,8 +115,13 @@ module CtrlCore(
         // fifo control signal
             input [7:0]     RxData_i,               // Rx Fifo read port
             input           p_RxFIFO_Empty_i,       // Rx Fifo empty, status signal, positive effective
+            input           p_RxFIFO_Over_i,        // Rx Fifo overflow, status signal, positive effective
+            input           p_RxFIFO_Full_i,        // Rx Fifp full, status signal, positive effective
+            input           p_RxFIFO_NearFull_i,    // Rx Fifo near full, status signal, positive effective
             output          n_RxFIFO_Rd_o,          // Rx Fifo read control signal, negative effective
             output          n_RxFIFO_Clr_o,         // Rx Fifo clear signal
+            output [15:0]   RxTimeOutSet_o,         // Rx time out value, count the AcqSig
+            input           p_RxTimeOut_i,          // Rx time out flag, 1-time out occur, 0-no error
             input [15:0]    RxFIFO_Level_i,         // bytes number in the Rx fifo
         // extend function signal(Data link level)
             output          p_RxFrame_Func_En_o,    // Data link level protocol function enable control
@@ -149,7 +154,11 @@ module CtrlCore(
         reg [15:0]  BytesNumberInTxFifo_r1      /*synthesis syn_preserve = 1*/;  // R the bytes number in the transmit fifo 
         reg [15:0]  ReceiveTimeOutLvl_r1        /*synthesis syn_preserve = 1*/;  // R/W the receive time out buffer, count the acquisition signal - AcqSig
         reg         p_IrqSig_r1                 /*synthesis syn_preserve = 1*/;  // Output interrupt signal 
-        reg [2:0]   shift_TOVR_r1               /*synthesis syn_preserve = 1*/;  // the shift register for interrupt
+        reg [2:0]   shift_TOVR_r1               /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TOVR
+        reg [2:0]   shift_TNFUL_r1              /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TNFUL 
+        reg [2:0]   shift_TTRIG_r1              /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TTRIG
+        reg [2:0]   shift_TIMEOUT_r1            /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TIMEOUT
+        reg [2:0]   shift_TFUL_r1               /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TFUL
     // Logic definition
         // page control signal definition
             wire        ConfigEn_w;
@@ -225,6 +234,12 @@ module CtrlCore(
             wire        FrameAnsTimeInfo1_Read_Access_w;
             wire        FrameAnsTimeInfo2_Read_Access_w;
             wire        ReservedAddr3_Read_Access_w;
+        // Rising edge detect logic
+            wire        RisingEdge_TOVR_w;
+            wire        RisingEdge_TNFUL_w;
+            wire        RisingEdge_TTRIG_w;
+            wire        RisingEdge_TIMEOUT_w;
+            wire        RisingEdge_TFUL_w;
     // parameter
         // Address definition
             parameter   ADDR_UartControl                = 4'b0000;
@@ -419,6 +434,12 @@ module CtrlCore(
             assign p_ParityEnable_o     = ParEn_w;
             assign p_BigEnd_o           = EndSel_w;
             assign ParityMethod_o       = ParSel_w;
+        // Rising edge detect logic
+            assign RisingEdge_TOVR_w    = ~shift_TOVR_r1[2]     && shift_TOVR_r1[1];
+            assign RisingEdge_TNFUL_w   = ~shift_TNFUL_r1[2]    && shift_TNFUL_r1[1];
+            assign RisingEdge_TTRIG_w   = ~shift_TTRIG_r1[2]    && shift_TTRIG_r1[1];
+            assign RisingEdge_TIMEOUT_w = ~shift_TIMEOUT_r1[2]  && shift_TIMEOUT_r1[1];
+            assign RisingEdge_TFUL_w    = ~shift_TFUL_r1[2]     && shift_TFUL_r1[1];
     // UartControl register fresh 
         always @(posedge clk or negedge rst) begin
             if (!rst) begin    // Initial state
@@ -716,14 +737,82 @@ module CtrlCore(
             end
             
          end 
-    // Interrupt Signal generator
+    // Interrupt Status and Signal generator, the status register is sticky.
+        // import input interrupt signal detect, shift register 
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    shift_TOVR_r1       <= 3'b0;
+                    shift_TNFUL_r1      <= 3'b0;
+                    shift_TTRIG_r1      <= 3'b0;
+                    shift_TIMEOUT_r1    <= 3'b0;
+                    shift_TFUL_r1       <= 3'b0;
+                end
+                else begin
+                    shift_TOVR_r1       <= {shift_TOVR_r1[1:0],     p_TxFIFO_Over_i};
+                    shift_TNFUL_r1      <= {shift_TNFUL_r1[1:0],    p_TxFIFO_NearFull_i};
+                    shift_TTRIG_r1      <= {shift_TTRIG_r1[1:0],    (BytesNumberInRxFifo_r1 >= TxTrigLevel_r1)};
+                    shift_TIMEOUT_r1    <= {shift_TIMEOUT_r1[1:0],  p_RxTimeOut_i};
+                    shift_TFUL_r1       <= {shift_TFUL_r1[1:0],     p_TxFIFO_Full_i};
+                end
+            end
         // TOVR, transmission fifo overflow interrupt
-        always @(posedge clk or negedge rst) begin
-            if (!rst) begin
-                InterruptState_r1[12] <= IRQ_TOVR_OFF;   // no interrupt generate
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[12] <= IRQ_TOVR_OFF;   // no interrupt generate
+                end
+                else if (RisingEdge_TOVR_w == ON) begin // the overflow of the tx fifo occurs
+                    InterruptState_r1[12] <= IRQ_TOVR_ON;   // the interrupt state established
+                end
+                else if (InterruptStatus1_Write_Access_w == ON) begin  // write "1" to clear the bit
+                    InterruptState_r1[12] <= DataBus_i[4]?IRQ_TOVR_OFF:InterruptState_r1[12];
+                end
+                else begin
+                    InterruptState_r1[12] <= InterruptState_r1[12];
+                end
             end
-            else if () begin
-                
+        // TNFUL, transmission fifo near full interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[11] <= IRQ_TNFUL_OFF; // initial state                    
+                end
+                else if (RisingEdge_TNFUL_w == ON) begin   // the tx fifo near full interrupt occurs
+                    InterruptState_r1[11] <= IRQ_TNFUL_ON;
+                end
+                else if (InterruptStatus1_Write_Access_w == ON) begin // clear the tx fifo near full interrupt
+                    InterruptState_r1[11] <= DataBus_i[3]?IRQ_TNFUL_OFF:InterruptState_r1[11];
+                end
+                else begin
+                    InterruptState_r1[11] <= InterruptState_r1[11];
+                end
             end
-        end
+        // TTRIG, transmission fifo trigger interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[10] <= IRQ_TTRIG_OFF;
+                end
+                else if (RisingEdge_TNFUL_w == ON) begin
+                    InterruptState_r1[10] <= IRQ_TTRIG_ON;
+                end
+                else if (InterruptStatus1_Write_Access_w == ON ) begin
+                    InterruptState_r1[10] <= DataBus_i[2]?IRQ_TTRIG_OFF:InterruptState_r1[10];
+                end
+                else begin
+                    InterruptState_r1[10] <= InterruptState_r1[10];
+                end
+            end
+        // TIMEOUT, receive module receive interval time out
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[8] <= IRQ_TIMEOUT_OFF;                   
+                end
+                else if (RisingEdge_TIMEOUT_w ==  ON ) begin
+                    InterruptState_r1[8] <= IRQ_TIMEOUT_ON;
+                end
+                else if (InterruptStatus1_Write_Access_w == ON ) begin
+                    InterruptState_r1[8] <= DataBus_i[0]?IRQ_TIMEOUT_OFF:InterruptState_r1[8];
+                end
+                else begin
+                    InterruptState_r1[8] <= InterruptState_r1[8];
+                end
+            end
 endmodule

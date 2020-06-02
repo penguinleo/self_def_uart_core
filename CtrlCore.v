@@ -389,7 +389,7 @@ module CtrlCore(
             assign p_Irq_REMPTY_w   = InterruptState_r1[1];
             assign p_Irq_RTRIG_w    = InterruptState_r1[0];
         // Bus control signal logic 
-            assign FallingEdge_rd_w                     = (shift_rd_r1[2] == N_OFF)&& (shift_rd_r1[1] == N_ON);     // the falling edge detect of the rd signal, 1~2 SYSCLK delay
+            assign FallingEdge_rd_w                     = (n_ChipSelect_i == N_ON) && (shift_rd_r1[2] == N_OFF)&& (shift_rd_r1[1] == N_ON);     // the falling edge detect of the rd signal, 1~2 SYSCLK delay
             assign ChipWriteAccess_w                    = (n_ChipSelect_i == N_ON) && (n_we_i == N_ON);
             assign ChipReadAccess_w                     = (n_ChipSelect_i == N_ON) && (shift_rd_r1[2] == N_ON); // 2~3 SYSCLK delay
         // Register write access available logic definition

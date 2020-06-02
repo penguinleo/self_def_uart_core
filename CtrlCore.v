@@ -104,6 +104,7 @@ module CtrlCore(
             input           p_TxFIFO_Over_i,        // Tx Fifo overflow signal
             input           p_TxFIFO_Full_i,        // Tx Fifo full signal, positive the fifo full
             input           p_TxFIFO_NearFull_i,    // Tx Fifo near full signal
+            input           p_TxFIFO_Empty_i,       // Tx Fifo empty signal
             output          n_TxFIFO_We_o,          // Tx Fifo write control singal, negative effective
             output          n_TxFIFO_Clr_o,         // Tx Fifo clear signal, negative effective
             input [15:0]    TxFIFO_Level_i,         // The bytes number in the Tx fifo          
@@ -135,6 +136,7 @@ module CtrlCore(
         output          ParityMethod_o
     );
     // Register definition //trip-mode synthesis syn_preserve=1
+        reg [2:0]   shift_rd_r1                 /*synthesis syn_preserve = 1*/;  // the shift register for the input bus control signal rd
         reg [7:0]   UartControl_r1              /*synthesis syn_preserve = 1*/;  // W module control
         reg         p_RxRst_r1                  /*synthesis syn_preserve = 1*/; 
         reg         p_TxRst_r1                  /*synthesis syn_preserve = 1*/; 
@@ -159,6 +161,13 @@ module CtrlCore(
         reg [2:0]   shift_TTRIG_r1              /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TTRIG
         reg [2:0]   shift_TIMEOUT_r1            /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TIMEOUT
         reg [2:0]   shift_TFUL_r1               /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TFUL
+        reg [2:0]   shift_ParityErr_r1          /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal Parity Error
+        reg [2:0]   shift_FrameErr_r1           /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal Frame Error  
+        reg [2:0]   shift_ROVR_r1               /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal ROVR       
+        reg [2:0]   shift_TEMPTY_r1             /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal TEMPTY
+        reg [2:0]   shift_RFULL_r1              /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal RFULL
+        reg [2:0]   shift_REMPTY_r1             /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal REMPTY
+        reg [2:0]   shift_RTRIG_r1              /*synthesis syn_preserve = 1*/;  // the shift register for interrupt signal RTRIG
     // Logic definition
         // page control signal definition
             wire        ConfigEn_w;
@@ -186,6 +195,7 @@ module CtrlCore(
             wire        p_Irq_REMPTY_w;
             wire        p_Irq_RTRIG_w;
         // Bus control signal logic
+            wire        FallingEdge_rd_w;       // the falling edge of the rd signal
             wire        ChipWriteAccess_w;      // The chip selected signal and write signal available together.
             wire        ChipReadAccess_w;       // The chip selected signal and read signal available together.
         // Register write access available
@@ -239,7 +249,14 @@ module CtrlCore(
             wire        RisingEdge_TNFUL_w;
             wire        RisingEdge_TTRIG_w;
             wire        RisingEdge_TIMEOUT_w;
+            wire        RisingEdge_PARE_w;
+            wire        RisingEdge_FRAME_w;
+            wire        RisingEdge_ROVR_w;
             wire        RisingEdge_TFUL_w;
+            wire        RisingEdge_TEMPTY_w;
+            wire        RisingEdge_RFULL_w;
+            wire        RisingEdge_REMPTY_w;
+            wire        RisingEdge_RTRIG_w;
     // parameter
         // Address definition
             parameter   ADDR_UartControl                = 4'b0000;
@@ -372,8 +389,9 @@ module CtrlCore(
             assign p_Irq_REMPTY_w   = InterruptState_r1[1];
             assign p_Irq_RTRIG_w    = InterruptState_r1[0];
         // Bus control signal logic 
-            assign ChipWriteAccess_w                    = (n_ChipSelect_i == 1'b0) && (n_we_i == 1'b0);
-            assign ChipReadAccess_w                     = (n_ChipSelect_i == 1'b0) && (n_rd_i == 1'b0);
+            assign FallingEdge_rd_w                     = (shift_rd_r1[2] == N_OFF)&& (shift_rd_r1[1] == N_ON);     // the falling edge detect of the rd signal, 1~2 SYSCLK delay
+            assign ChipWriteAccess_w                    = (n_ChipSelect_i == N_ON) && (n_we_i == N_ON);
+            assign ChipReadAccess_w                     = (n_ChipSelect_i == N_ON) && (shift_rd_r1[2] == N_ON); // 2~3 SYSCLK delay
         // Register write access available logic definition
             assign UartControl_Write_Access_w           = ChipWriteAccess_w && (AddrBus_i == ADDR_UartControl           );
             assign TxDataPort_Write_Access_w            = ChipWriteAccess_w && (AddrBus_i == ADDR_TxDataPort            );
@@ -427,7 +445,7 @@ module CtrlCore(
             assign n_TxFIFO_We_o        = (TxFIFO_We_r1[2] == N_OFF) && (TxFIFO_We_r1[1] == N_ON);     // falling edge of the TxDataPort_Write_Access_w trigger the write operation
             assign n_TxFIFO_Clr_o       = ~p_TxRst_r1; 
             assign p_RxCoreEn_o         = RxEn_w;
-            // assign n_RxFIFO_Rd_o        = ;    // the read signal is generated from the bus access 
+            assign n_RxFIFO_Rd_o        = FallingEdge_rd_w;    // the read signal is generated from the bus access 
             assign n_RxFIFO_Clr_o       = ~p_RxRst_r1;
             // assign p_RxFrame_Func_En_o  = ;
             // assign n_RxFrameInfo_Rd_o   = ;   // the read signal generated from the bus access
@@ -435,11 +453,27 @@ module CtrlCore(
             assign p_BigEnd_o           = EndSel_w;
             assign ParityMethod_o       = ParSel_w;
         // Rising edge detect logic
-            assign RisingEdge_TOVR_w    = ~shift_TOVR_r1[2]     && shift_TOVR_r1[1];
-            assign RisingEdge_TNFUL_w   = ~shift_TNFUL_r1[2]    && shift_TNFUL_r1[1];
-            assign RisingEdge_TTRIG_w   = ~shift_TTRIG_r1[2]    && shift_TTRIG_r1[1];
-            assign RisingEdge_TIMEOUT_w = ~shift_TIMEOUT_r1[2]  && shift_TIMEOUT_r1[1];
-            assign RisingEdge_TFUL_w    = ~shift_TFUL_r1[2]     && shift_TFUL_r1[1];
+            assign RisingEdge_TOVR_w    = (shift_TOVR_r1[2]     == OFF) && (shift_TOVR_r1[1]     == ON);
+            assign RisingEdge_TNFUL_w   = (shift_TNFUL_r1[2]    == OFF) && (shift_TNFUL_r1[1]    == ON);
+            assign RisingEdge_TTRIG_w   = (shift_TTRIG_r1[2]    == OFF) && (shift_TTRIG_r1[1]    == ON);
+            assign RisingEdge_TIMEOUT_w = (shift_TIMEOUT_r1[2]  == OFF) && (shift_TIMEOUT_r1[1]  == ON);
+            assign RisingEdge_TFUL_w    = (shift_TFUL_r1[2]     == OFF) && (shift_TFUL_r1[1]     == ON);
+            assign RisingEdge_PARE_w    = (shift_ParityErr_r1[2]== OFF) && (shift_ParityErr_r1[1]== ON);
+            assign RisingEdge_ROVR_w    = (shift_ROVR_r1[2]     == OFF) && (shift_ROVR_r1[1]     == ON);
+            assign RisingEdge_FRAME_w   = (shift_FrameErr_r1[2] == OFF) && (shift_FrameErr_r1[1] == ON);
+            assign RisingEdge_TEMPTY_w  = (shift_TEMPTY_r1[2]   == OFF) && (shift_TEMPTY_r1[1]   == ON);
+            assign RisingEdge_RFULL_w   = (shift_RFULL_r1[2]    == OFF) && (shift_RFULL_r1[1]    == ON);
+            assign RisingEdge_REMPTY_w  = (shift_REMPTY_r1[2]   == OFF) && (shift_REMPTY_r1[1]   == ON);
+            assign RisingEdge_RTRIG_w   = (shift_RTRIG_r1[2]    == OFF) && (shift_RTRIG_r1[1]    == ON);
+    // n_rd_i shift register detect
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                shift_rd_r1 <= 3'b111;
+            end
+            else begin
+                shift_rd_r1 <= {shift_rd_r1[1:0],n_rd_i};
+            end
+        end
     // UartControl register fresh 
         always @(posedge clk or negedge rst) begin
             if (!rst) begin    // Initial state
@@ -545,7 +579,7 @@ module CtrlCore(
     // RxTrigLevel_r1 register  fresh
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                RxTrigLevel_r1[15:8] <= 8'h7F;
+                RxTrigLevel_r1[15:8] <= 8'h00;
             end
             else if (RxTrigLevelHigh_Write_Access_w == ON ) begin
                 RxTrigLevel_r1[15:8] <= DataBus_i;
@@ -556,7 +590,7 @@ module CtrlCore(
         end
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                RxTrigLevel_r1[7:0] <= 8'hff;
+                RxTrigLevel_r1[7:0] <= 8'h00;
             end
             else if (RxTrigLevelLow_Write_Access_w == ON ) begin
                 RxTrigLevel_r1[7:0] <= DataBus_i;
@@ -565,10 +599,10 @@ module CtrlCore(
                 RxTrigLevel_r1[7:0] <= RxTrigLevel_r1[7:0];
             end
         end
-    // TxTrigLevel_r1 register fresh
+    // Transmit register fresh
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                TxTrigLevel_r1[15:8] <= 8'h7F;
+                TxTrigLevel_r1[15:8] <= 8'h00;
             end
             else if (TxTrigLevelHigh_Write_Access_w == ON ) begin
                 TxTrigLevel_r1[15:8] <= DataBus_i;
@@ -579,7 +613,7 @@ module CtrlCore(
         end
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
-                TxTrigLevel_r1[7:0] <= 8'h7F;                
+                TxTrigLevel_r1[7:0] <= 8'h00;                
             end
             else if (TxTrigLevelLow_Write_Access_w == ON ) begin
                 TxTrigLevel_r1[7:0] <= DataBus_i;
@@ -745,14 +779,24 @@ module CtrlCore(
                     shift_TNFUL_r1      <= 3'b0;
                     shift_TTRIG_r1      <= 3'b0;
                     shift_TIMEOUT_r1    <= 3'b0;
+                    shift_ParityErr_r1  <= 3'b0;
+                    shift_FrameErr_r1   <= 3'b0;
                     shift_TFUL_r1       <= 3'b0;
+                    shift_TEMPTY_r1     <= 3'b0;
+                    shift_RFULL_r1      <= 3'b0;
+                    shift_REMPTY_r1     <= 3'b0;
                 end
                 else begin
-                    shift_TOVR_r1       <= {shift_TOVR_r1[1:0],     p_TxFIFO_Over_i};
-                    shift_TNFUL_r1      <= {shift_TNFUL_r1[1:0],    p_TxFIFO_NearFull_i};
-                    shift_TTRIG_r1      <= {shift_TTRIG_r1[1:0],    (BytesNumberInRxFifo_r1 >= TxTrigLevel_r1)};
-                    shift_TIMEOUT_r1    <= {shift_TIMEOUT_r1[1:0],  p_RxTimeOut_i};
-                    shift_TFUL_r1       <= {shift_TFUL_r1[1:0],     p_TxFIFO_Full_i};
+                    shift_TOVR_r1       <= {shift_TOVR_r1[1:0],         p_TxFIFO_Over_i};
+                    shift_TNFUL_r1      <= {shift_TNFUL_r1[1:0],        p_TxFIFO_NearFull_i};
+                    shift_TTRIG_r1      <= {shift_TTRIG_r1[1:0],        ((BytesNumberInRxFifo_r1 >= TxTrigLevel_r1)&(TxTrigLevel_r1!=16'd0))}; // bytes number in fifo over the level and the level is not 0!
+                    shift_TIMEOUT_r1    <= {shift_TIMEOUT_r1[1:0],      p_RxTimeOut_i};
+                    shift_ParityErr_r1  <= {shift_ParityErr_r1[1:0],    p_RxParityErr_i};
+                    shift_FrameErr_r1   <= {shift_FrameErr_r1[1:0],     p_RxFrameErr_i};
+                    shift_TFUL_r1       <= {shift_TFUL_r1[1:0],         p_TxFIFO_Full_i};
+                    shift_TEMPTY_r1     <= {shift_TEMPTY_r1[1:0],       p_TxFIFO_Empty_i};
+                    shift_RFULL_r1      <= {shift_TFUL_r1[1:0],         p_RxFIFO_Full_i};
+                    shift_REMPTY_r1     <= {shift_REMPTY_r1[1:0],       p_RxFIFO_Empty_i};
                 end
             end
         // TOVR, transmission fifo overflow interrupt
@@ -761,7 +805,7 @@ module CtrlCore(
                     InterruptState_r1[12] <= IRQ_TOVR_OFF;   // no interrupt generate
                 end
                 else if (RisingEdge_TOVR_w == ON) begin // the overflow of the tx fifo occurs
-                    InterruptState_r1[12] <= IRQ_TOVR_ON;   // the interrupt state established
+                    InterruptState_r1[12] <= IRQ_TOVR_ON && InterruptMask_r1[12];   // the interrupt state established
                 end
                 else if (InterruptStatus1_Write_Access_w == ON) begin  // write "1" to clear the bit
                     InterruptState_r1[12] <= DataBus_i[4]?IRQ_TOVR_OFF:InterruptState_r1[12];
@@ -776,7 +820,7 @@ module CtrlCore(
                     InterruptState_r1[11] <= IRQ_TNFUL_OFF; // initial state                    
                 end
                 else if (RisingEdge_TNFUL_w == ON) begin   // the tx fifo near full interrupt occurs
-                    InterruptState_r1[11] <= IRQ_TNFUL_ON;
+                    InterruptState_r1[11] <= IRQ_TNFUL_ON && InterruptMask_r1[11];
                 end
                 else if (InterruptStatus1_Write_Access_w == ON) begin // clear the tx fifo near full interrupt
                     InterruptState_r1[11] <= DataBus_i[3]?IRQ_TNFUL_OFF:InterruptState_r1[11];
@@ -790,10 +834,10 @@ module CtrlCore(
                 if (!rst) begin
                     InterruptState_r1[10] <= IRQ_TTRIG_OFF;
                 end
-                else if (RisingEdge_TNFUL_w == ON) begin
-                    InterruptState_r1[10] <= IRQ_TTRIG_ON;
+                else if (RisingEdge_TTRIG_w == ON) begin // Transmission fifo bytes number great than the level, and the level is not 0
+                    InterruptState_r1[10] <= IRQ_TTRIG_ON && InterruptMask_r1[10];
                 end
-                else if (InterruptStatus1_Write_Access_w == ON ) begin
+                else if (InterruptStatus1_Write_Access_w == ON ) begin  // clear the interrupt
                     InterruptState_r1[10] <= DataBus_i[2]?IRQ_TTRIG_OFF:InterruptState_r1[10];
                 end
                 else begin
@@ -805,14 +849,134 @@ module CtrlCore(
                 if (!rst) begin
                     InterruptState_r1[8] <= IRQ_TIMEOUT_OFF;                   
                 end
-                else if (RisingEdge_TIMEOUT_w ==  ON ) begin
-                    InterruptState_r1[8] <= IRQ_TIMEOUT_ON;
+                else if (RisingEdge_TIMEOUT_w ==  ON ) begin // Time out interrupt occur
+                    InterruptState_r1[8] <= IRQ_TIMEOUT_ON && InterruptMask_r1[8];
                 end
-                else if (InterruptStatus1_Write_Access_w == ON ) begin
+                else if (InterruptStatus1_Write_Access_w == ON ) begin // clear the interrupt
                     InterruptState_r1[8] <= DataBus_i[0]?IRQ_TIMEOUT_OFF:InterruptState_r1[8];
                 end
                 else begin
                     InterruptState_r1[8] <= InterruptState_r1[8];
+                end
+            end
+        // PARE, receive module parity check fail interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[7] <= IRQ_PARE_OFF;
+                end
+                else if (RisingEdge_PARE_w == ON ) begin  // the parity error interrupt occur
+                    InterruptState_r1[7] <= IRQ_PARE_ON && InterruptMask_r1[7];
+                end
+                else if (InterruptStatus2_Write_Access_w == ON ) begin // clear the interrupt
+                    InterruptState_r1[7] <= DataBus_i[7]?IRQ_PARE_OFF:InterruptState_r1[7];
+                end
+                else begin
+                    InterruptState_r1[7] <= InterruptState_r1[7];
+                end
+            end
+        // FRAME, receive module frame error, stop bit missing
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[6] <= IRQ_FRAME_OFF;
+                end
+                else if (RisingEdge_FRAME_w == ON) begin // Byte missing the stop bit occur
+                    InterruptState_r1[6] <= IRQ_FRAME_ON && InterruptMask_r1[6];
+                end
+                else if (InterruptStatus2_Write_Access_w == ON ) begin // clear the interrupt
+                    InterruptState_r1[6] <= DataBus_i[6]?IRQ_FRAME_OFF:InterruptState_r1[6];
+                end
+                else begin
+                    InterruptState_r1[6] <= InterruptState_r1[6];
+                end
+            end
+        // ROVR, receive fifo overflow interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[5] <= IRQ_ROVR_OFF;                  
+                end
+                else if (RisingEdge_ROVR_w == ON ) begin // receive fifo overflow interrupt occur
+                    InterruptState_r1[5] <= IRQ_ROVR_ON && InterruptMask_r1[5];
+                end
+                else if (InterruptStatus2_Write_Access_w == ON ) begin // clear the interrupt
+                    InterruptState_r1[5] <= DataBus_i[5]?IRQ_ROVR_OFF:InterruptState_r1[5];
+                end
+                else begin
+                    InterruptState_r1[5] <= InterruptState_r1[5];
+                end
+            end
+        // TFUL, transmit fifo full interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[4] <= IRQ_TFUL_OFF;
+                end
+                else if (RisingEdge_TFUL_w == ON ) begin // transmit fifo full interrupt occur
+                    InterruptState_r1[4] <= IRQ_TFUL_ON && InterruptMask_r1[4];
+                end
+                else if (InterruptStatus2_Write_Access_w == ON ) begin // clear interrupt
+                    InterruptState_r1[4] <= DataBus_i[4]?IRQ_TFUL_OFF:InterruptState_r1[4];
+                end
+                else begin
+                    InterruptState_r1[4] <= InterruptState_r1[4];
+                end
+            end
+        // TEMPTY, transmit fifo empty interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[3] <= IRQ_TEMPTY_OFF;                    
+                end
+                else if (RisingEdge_TEMPTY_w == ON ) begin
+                    InterruptState_r1[3] <= IRQ_TEMPTY_ON && InterruptMask_r1[3];
+                end
+                else if (InterruptStatus2_Write_Access_w == ON ) begin
+                    InterruptState_r1[3] <= DataBus_i[3]?IRQ_TEMPTY_OFF:InterruptState_r1[3];
+                end
+                else begin
+                    InterruptState_r1[3] <= InterruptState_r1[3];
+                end
+            end
+        // RFULL, receive fifo full interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[2] <= IRQ_RFULL_OFF;
+                end
+                else if (RisingEdge_RFULL_w == ON ) begin
+                    InterruptState_r1[2] <= IRQ_RFULL_ON && InterruptMask_r1[2];
+                end
+                else if (InterruptStatus2_Write_Access_w == ON ) begin
+                    InterruptState_r1[2] <= DataBus_i[2]?IRQ_RFULL_OFF:InterruptState_r1[2];
+                end
+                else begin
+                    InterruptState_r1[2] <= InterruptState_r1[2];
+                end
+            end
+        // REMPTY, receive fifo empty interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[1] <= IRQ_REMPTY_OFF;
+                end
+                else if (RisingEdge_REMPTY_w == ON ) begin
+                    InterruptState_r1[1] <= IRQ_REMPTY_ON && InterruptMask_r1[1];
+                end
+                else if (InterruptStatus2_Write_Access_w == ON ) begin
+                    InterruptState_r1[1] <= DataBus_i[2]?IRQ_REMPTY_OFF:InterruptState_r1[1];
+                end
+                else begin
+                    InterruptState_r1[1] <= InterruptState_r1[1];
+                end
+            end
+        // RTRIG, receive bytes number trigger interrupt
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    InterruptState_r1[0] <= IRQ_RTRIG_OFF;                    
+                end
+                else if (RisingEdge_RTRIG_w == ON ) begin
+                    InterruptState_r1[0] <= IRQ_RTRIG_ON && InterruptMask_r1[0];
+                end
+                else if (InterruptStatus2_Write_Access_w == ON ) begin
+                    InterruptState_r1[0] <= DataBus_i[0]?IRQ_RTRIG_ON:InterruptState_r1[0];
+                end
+                else begin
+                    InterruptState_r1[0] <= InterruptState_r1[0];
                 end
             end
 endmodule

@@ -772,7 +772,7 @@ module CtrlCore(
             
          end 
     // Interrupt Status and Signal generator, the status register is sticky.
-        // import input interrupt signal detect, shift register 
+        // port input interrupt signal detect, shift register 
             always @(posedge clk or negedge rst) begin
                 if (!rst) begin
                     shift_TOVR_r1       <= 3'b0;

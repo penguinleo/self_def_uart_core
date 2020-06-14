@@ -49,38 +49,22 @@
 module UartCore(
     input   clk,
     input   rst,
-    // write enable & control register
-        input           p_We_i,
-        input [7:0]     CtrlReg1_i,  
-        input [7:0]     CtrlReg2_i,
-        input [7:0]     CtrlReg3_i,
-        input           n_clr_i,
-    // frame info 
-        input           n_rd_frame_fifo_i,
-        output [27:0]   frame_info_o,
-        output [15:0]   ans_delay_o,
-    // rx fifo control signal
-        output [7:0]    data_o,
-        input           n_rd_i,     // the fifo read signal
-        output          p_empty_o,  // the fifo is empty
-    // tx fifo control signal
-        input [7:0]     data_i,
-        input           n_we_i,
-        output          p_full_o,
-    // time stamp input
-        input           p_sig_10MHz_i,
-        input [3:0]     acqurate_stamp_i,
-        input [11:0]    millisecond_stamp_i,
-        input [31:0]    second_stamp_i,     
-    // the error flag signal
-        output  [7:0]   ParityErrorNum_o,
+    // The bus interface
+        input  [3:0]    AddrBus_i,     
+        input           n_ChipSelect_i,
+        input           n_rd_i,        
+        input           n_we_i,        
+        input  [7:0]    DataBus_i,     
+        output [7:0]    DataBus_o,     
+        output          p_IrqSig_o, 
     // Uart port
         input           Rx_i,
         output          Tx_o
     );
-
     wire [11:0] AcqPeriod_w;
     wire [7:0]  BitCompensation_w;
+    wire [3:0]  RoundUpNum_w;
+    wire [3:0]  RoundDownNum_w;
     wire [3:0]  AcqNumPerBit_w;
     wire [15:0] BytesInFifo_w;
     wire        p_ParityEnable_w;
@@ -90,20 +74,57 @@ module UartCore(
     wire        BaudSig_w;
     wire        p_SendFinished_w;
     wire        p_DataReceived_w;
-
+    // logic definition
+        assign BitCompensation_w = {RoundUpNum_w, RoundDownNum_w};
     CtrlCore ControlCore(
         .clk(clk),
         .rst(rst),
-        .p_We_i(p_We_i),
-        .CtrlReg1_i(CtrlReg1_i),
-        .CtrlReg2_i(CtrlReg2_i),
-        .CtrlReg3_i(CtrlReg3_i),
-        .AcqPeriod_o(AcqPeriod_w),
-        .BitCompensation_o(BitCompensation_w),
-        .AcqNumPerBit_o(AcqNumPerBit_w),
-        .p_ParityEnable_o(p_ParityEnable_w),
-        .p_BigEnd_o(p_BigEnd_w),
-        .ParityMethod_o(ParityMethod_w)
+        // the bus interface 
+            .AddrBus_i(AddrBus_i),
+            .n_ChipSelect_i(n_ChipSelect_i),
+            .n_rd_i(n_rd_i),
+            .n_we_i(n_we_i),
+            .DataBus_i(DataBus_i),
+            .DataBus_o(DataBus_o),
+            .p_IrqSig_o(p_IrqSig_o),
+        // baudrate module interface
+            .BaudRateGen_o(AcqPeriod_w),
+            .RoundUpNum_o(RoundUpNum_w),
+            .RoundDownNum_o(RoundDownNum_w),
+            .BaudDivider_o(AcqNumPerBit_w), 
+        // tx module interface
+            .p_TxCoreEn_o(p_TxCoreEn_w),
+            .TxData_o(TxData_w),
+            .p_TxFIFO_Over_i(p_TxFIFO_Over_w),
+            .p_TxFIFO_Full_i(p_TxFIFO_Full_w),
+            .p_TxFIFO_NearFull_i(p_TxFIFO_NearFull_w),
+            .p_TxFIFO_Empty_i(p_TxFIFO_Empty_w),
+            .n_TxFIFO_We_o(n_TxFIFO_We_w),
+            .n_TxFIFO_Clr_o(n_TxFIFO_Clr_w),
+            .TxFIFO_Level_i(TxFIFO_Level_w),            
+        // rx module interface
+            .p_RxCoreEn_o(p_RxCoreEn_w),
+            .p_RxParityErr_i(p_RxParityErr_w),
+            .p_RxFrameErr_i(p_RxFrameErr_w),
+            .RxData_i(RxData_w),
+            .p_RxFIFO_Empty_i(p_RxFIFO_Empty_w),
+            .p_RxFIFO_Over_i(p_RxFIFO_Over_w),
+            .p_RxFIFO_Full_i(p_RxFIFO_Full_w),
+            .p_RxFIFO_NearFull_i(p_RxFIFO_NearFull_w),
+            .n_RxFIFO_Rd_o(n_RxFIFO_Rd_w),
+            .n_RxFIFO_Clr_o(n_RxFIFO_Clr_w),
+            .RxTimeOutSet_o(RxTimeOutSet_w),
+            .p_RxTimeOut_i(p_RxTimeOut_w),
+            .RxFIFO_Level_i(RxFIFO_Level_w),
+            .p_RxFrame_Func_En_o(p_RxFrame_Func_En_w),
+            .RxFrameInfo_i(RxFrameInfo_w),
+            .AnsDelayTime_i(AnsDelayTime_w),
+            .p_RxFrame_Empty_i(p_RxFrame_Empty_w),
+            .n_RxFrameInfo_Rd_o(n_RxFrameInfo_Rd_o),
+        // Rx & Tx encode control output
+            .p_ParityEnable_o(p_ParityEnable_w),
+            .p_BigEnd_o(p_BigEnd_w),
+            .ParityMethod_o(ParityMethod_w)
     );
 
     BaudrateModule_Simplified BaudGen(
@@ -118,7 +139,7 @@ module UartCore(
     RxCore RxCore(
         .clk(clk),
         .rst(rst),
-        .data_o(data_o),
+        .data_o(RxData_w),
         .n_rd_i(n_rd_i),
         .n_clr_i(n_clr_i),
         .p_empty_o(p_empty_o),
@@ -144,16 +165,23 @@ module UartCore(
     TxCore TxCore(
         .clk(clk),
         .rst(rst),
-        .data_i(data_i),
-        .n_we_i(n_we_i),
-        .n_clr_i(n_clr_i),
-        .p_full_o(p_full_o),
-        .bytes_in_fifo_o(),
-        .p_BaudSig_i(BaudSig_w),
-        .p_ParityEnable_i(p_ParityEnable_w),
-        .p_BigEnd_i(p_BigEnd_w),
-        .ParityMethod_i(ParityMethod_w),
-        .p_SendFinished_o(p_SendFinished_w),
+        // fifo control signal
+            .data_i(TxData_w),
+            .n_we_i(n_TxFIFO_We_w),
+            .n_clr_i(n_TxFIFO_Clr_w),
+        // fifo status signal
+            .p_full_o(p_TxFIFO_Full_w),
+            .p_over_o(p_TxFIFO_Over_w),
+            .p_nearfull_o(p_TxFIFO_NearFull_w),
+            .p_empty_o(p_TxFIFO_Empty_w),
+            .bytes_in_fifo_o(TxFIFO_Level_w),
+        // baudrate signal
+            .p_BaudSig_i(BaudSig_w),
+        // control sognal
+            .p_ParityEnable_i(p_ParityEnable_w),
+            .p_BigEnd_i(p_BigEnd_w),
+            .ParityMethod_i(ParityMethod_w),
+        // .p_SendFinished_o(p_SendFinished_w),
         .Tx_o(Tx_o) 
     );
 

@@ -447,6 +447,22 @@ module CtrlCore(
             assign p_RxCoreEn_o         = RxEn_w;
             assign n_RxFIFO_Rd_o        = FallingEdge_rd_w;    // the read signal is generated from the bus access 
             assign n_RxFIFO_Clr_o       = ~p_RxRst_r1;
+            assign BaudRateGen_o        = BaudGenerator_r1;
+            assign RoundUpNum_o         = BitCompensateMethod_r1[7:4];
+            assign RoundDownNum_o       = BitCompensateMethod_r1[3:0];
+            assign BaudDivider_o        = BaudDivider_r1;
+            assign p_IrqSig_o           =       InterruptState_r1[12]       // TOVR
+                                            |   InterruptState_r1[11]       // TNFUL
+                                            |   InterruptState_r1[10]       // TTRIG
+                                            |   InterruptState_r1[08]       // TIMEOUT
+                                            |   InterruptState_r1[07]       // PARE
+                                            |   InterruptState_r1[06]       // FRAME
+                                            |   InterruptState_r1[05]       // ROVR
+                                            |   InterruptState_r1[04]       // TFUL
+                                            |   InterruptState_r1[03]       // TEMPTY
+                                            |   InterruptState_r1[02]       // RFULL
+                                            |   InterruptState_r1[01]       // REMPTY
+                                            |   InterruptState_r1[00];      // RTRIG
             // assign p_RxFrame_Func_En_o  = ;
             // assign n_RxFrameInfo_Rd_o   = ;   // the read signal generated from the bus access
             assign p_ParityEnable_o     = ParEn_w;

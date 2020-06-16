@@ -37,10 +37,15 @@ module TxCore(
     input           clk,
     input           rst,
     // fifo control signal
-        input [7:0] data_i,
-        input       n_we_i,
-        input       n_clr_i,
-        output      p_full_o,
+        input [7:0] Data_i,
+        input       n_We_i,
+        input       n_Clr_i,
+        input       p_Enable_i,
+    // fifo status signal
+        output      p_Full_o,
+        output      p_Over_o,
+        output      p_NearFull_o,
+        output      p_Empty_o,
         output [15:0] bytes_in_fifo_o,
     // the baudsig from the baudrate module
         input           p_BaudSig_i,
@@ -48,8 +53,6 @@ module TxCore(
         input           p_ParityEnable_i,
         input           p_BigEnd_i,
         input           ParityMethod_i,
-    // the interface for the AnsDelayTimeMeasure module
-        output          p_SendFinished_o,
     // the tx signal
         output          Tx_o
     );
@@ -78,6 +81,8 @@ module TxCore(
     // logic definition
         assign p_SendFinished_w = (State_w == STOPBIT) && (p_FiFoEmpty_w == EMPTY) && (p_BaudSig_i == 1'b1);
         assign p_SendFinished_o = p_SendFinished_w;
+        // output 
+            assign p_Empty_o    = p_FiFoEmpty_w;
     FSM StateMachine(
         .clk(clk),
         .rst(rst),

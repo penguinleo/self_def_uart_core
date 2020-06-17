@@ -121,7 +121,10 @@ module TxCore(
         .ParityResult_o(ParityResult_w)
         );
 
-    FIFO_ver1 #(.DEPTH(8'd32)) TxCoreFifo (
+    FIFO_ver2 #(
+        .WIDTH(16'd16),
+        .DEPTH(16'd4096)        
+        ) TxCoreFifo (
         .clk(clk),
         .rst(rst),
         .data_i(data_i),
@@ -130,7 +133,9 @@ module TxCore(
         .n_clr_i(n_clr_i),
         .data_o(FifoData_w),
         .bytes_in_fifo_o(bytes_in_fifo_o),
+        .p_over_o(p_Over_o),
+        .p_nearfull_o(p_NearFull_o),
         .p_empty_o(p_FiFoEmpty_w),
-        .p_full_o(p_full_o)
+        .p_full_o(p_Full_o)
         );
 endmodule

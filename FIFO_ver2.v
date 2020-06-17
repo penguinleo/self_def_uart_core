@@ -24,7 +24,8 @@
 // -----------------------------------------------------------------------------
 module  FIFO_ver2
 #(
-    parameter DEPTH = 16'd128
+    parameter WIDTH = 16'd16,
+    parameter DEPTH = 16'd4096
     )
 (
     input           clk,
@@ -35,98 +36,170 @@ module  FIFO_ver2
     input           n_clr_i,
     output [7:0]    data_o,
     output [15:0]   bytes_in_fifo_o,
-    output          p_empty_o,
-    output          p_full_o
+    output          p_over_o,
+    output          p_full_o,
+    output          p_nearfull_o,        
+    output          p_empty_o         
     );
     // register definition
-        reg [7:0]   memory [DEPTH-1:0];     // the memory
-        reg [15:0]  pointer_wr_r;           // the memory pointer for write
-        reg [15:0]  pointer_rd_r;           // the memory pointer for read
-        reg [15:0]  next_pointer_wr_r;      // the next pointer of the wr pointer
-        reg         p_empty_r;
-        reg         p_full_r;
+        reg [7:0]   memory [WIDTH-1:0];     // the memory
+        // pointer 1
+            reg [15:0]  pointer_wr_r1/*synthesis syn_preserve = 1*/;           // the memory pointer for write
+            reg [15:0]  pointer_rd_r1/*synthesis syn_preserve = 1*/;           // the memory pointer for read
+            reg [15:0]  next_pointer_wr_r1/*synthesis syn_preserve = 1*/;      // the next pointer of the wr pointer
+        // pointer 2
+            reg [15:0]  pointer_wr_r2/*synthesis syn_preserve = 1*/;           // the memory pointer for write
+            reg [15:0]  pointer_rd_r2/*synthesis syn_preserve = 1*/;           // the memory pointer for read
+            reg [15:0]  next_pointer_wr_r2/*synthesis syn_preserve = 1*/;      // the next pointer of the wr pointer
+        // pointer 3
+            reg [15:0]  pointer_wr_r3/*synthesis syn_preserve = 1*/;           // the memory pointer for write
+            reg [15:0]  pointer_rd_r3/*synthesis syn_preserve = 1*/;           // the memory pointer for read
+            reg [15:0]  next_pointer_wr_r3/*synthesis syn_preserve = 1*/;      // the next pointer of the wr pointer
+        reg [2:0]   p_empty_r/*synthesis syn_preserve = 1*/;
+        reg [2:0]   p_full_r/*synthesis syn_preserve = 1*/;
+        reg [2:0]   p_nearfull_r/*synthesis syn_preserve = 1*/;
+        reg [2:0]   p_over_r/*synthesis syn_preserve = 1*/;
         reg [7:0]   output_data_r;
         reg [15:0]  bytes_in_fifo_r;        // the number of the bytes in fifo
     // wire definition
+        wire [15:0] pointer_wr_w;
+        wire [15:0] pointer_rd_w;
+        wire [15:0] next_pointer_wr_w;
         wire        p_full_w;
         wire        p_empty_w;
+        wire        p_nearfull_w;
+        wire        p_over_w;
+        wire        p_full_condition_w;
+        wire        p_empty_condition_w;
+        wire        p_nearfull_condition_w;
     // parameter definition
-
+        parameter   NEAR_FULL_LEVEL = DEPTH>>2 * 3;
     // assign
-        assign p_empty_w    = (pointer_wr_r == pointer_rd_r);
-        assign p_full_w     = (next_pointer_wr_r == pointer_rd_r);
-        assign p_empty_o    = p_empty_w;
-        assign p_full_o     = p_full_w;
-        assign data_o       = output_data_r;
-        ass
-    // the write pointer fresh
+        // assign p_empty_w    = (pointer_wr_r == pointer_rd_r);
+        // assign p_full_w     = (next_pointer_wr_r == pointer_rd_r);
+        assign pointer_wr_w             = (pointer_wr_r1 && pointer_wr_r2)||(pointer_wr_r2 && pointer_wr_r3)||(pointer_wr_r3 && pointer_wr_r1);
+        assign pointer_rd_w             = (pointer_rd_r1 && pointer_rd_r2)||(pointer_rd_r2 && pointer_rd_r3)||(pointer_rd_r3 && pointer_rd_r1);
+        assign next_pointer_wr_w        = (next_pointer_wr_r1 && next_pointer_wr_r2)||(next_pointer_wr_r2 && next_pointer_wr_r3)||(next_pointer_wr_r3 && next_pointer_wr_r1);        
+        assign p_empty_condition_w      = (pointer_wr_w == pointer_rd_w);
+        assign p_full_condition_w       = (next_pointer_wr_w == pointer_rd_w);
+        assign p_nearfull_condition_w   = (bytes_in_fifo_r >= NEAR_FULL_LEVEL);
+        assign p_empty_w                = (p_empty_r[0]&&p_empty_r[1])||(p_empty_r[1]&&p_empty_r[2])||(p_empty_r[2]&&p_empty_r[0]);
+        assign p_full_w                 = (p_full_r[0] &&p_full_r[1]) ||(p_full_r[1]&& p_full_r[2]) ||(p_full_r[2]&& p_full_r[0]);
+        assign p_nearfull_w             = (p_nearfull_r[0]&&p_nearfull_r[1])||(p_nearfull_r[1]&&p_nearfull_r[2])||(p_nearfull_r[2]&&p_nearfull_r[0]);
+        assign p_over_w                 = (p_over_r[0]&&p_over_r[1])||(p_over_r[1]&&p_over_r[2])||(p_over_r[2]&&p_over_r[0]);
+        assign p_empty_o                = p_empty_w;
+        assign p_full_o                 = p_full_w;
+        assign p_nearfull_o             = p_nearfull_w;
+        assign p_over_o                 = p_over_w;
+        assign data_o                   = output_data_r;
+    // the write pointer update, pointer_wr_rx
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin
-                pointer_wr_r <= 16'd0;                
+                pointer_wr_r1 <= 16'd0;
+                pointer_wr_r2 <= 16'd0;
+                pointer_wr_r3 <= 16'd0;              
             end
-            else if ((n_we_i == 1'b0) && (p_full_w == 1'b0)) begin
-                pointer_wr_r <= next_pointer_wr_r;
+            else if (n_we_i == 1'b0) begin
+                pointer_wr_r1 <= next_pointer_wr_r1;
+                pointer_wr_r2 <= next_pointer_wr_r2;
+                pointer_wr_r3 <= next_pointer_wr_r3;
             end
             else begin
-                pointer_wr_r <= pointer_wr_r;
+                pointer_wr_r1 <= pointer_wr_w;
+                pointer_wr_r2 <= pointer_wr_w;
+                pointer_wr_r3 <= pointer_wr_w;
             end
         end
-    // the next write pointer fresh
+    // the next write pointer update, next_pointer_wr_rx
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin
-                next_pointer_wr_r <= 16'd1;                
+                next_pointer_wr_r1 <= 16'd1; 
+                next_pointer_wr_r2 <= 16'd1;
+                next_pointer_wr_r3 <= 16'd1;               
             end
-            else if ((n_we_i == 1'b0) && (p_full_w == 1'b0)) begin
-                if (next_pointer_wr_r >= DEPTH-1) begin
-                    next_pointer_wr_r <= 8'd0;
+            else if (n_we_i == 1'b0) begin
+                if (next_pointer_wr_w >= DEPTH-1) begin
+                    next_pointer_wr_r1 <= 16'd0;
+                    next_pointer_wr_r2 <= 16'd0;
+                    next_pointer_wr_r3 <= 16'd0;
                 end
                 else begin
-                    next_pointer_wr_r <= next_pointer_wr_r + 1'b1;
+                    next_pointer_wr_r1 <= next_pointer_wr_w + 1'b1;
+                    next_pointer_wr_r2 <= next_pointer_wr_w + 1'b1;
+                    next_pointer_wr_r3 <= next_pointer_wr_w + 1'b1;
                 end
             end
             else begin
-                next_pointer_wr_r <= next_pointer_wr_r;
+                next_pointer_wr_r1 <= next_pointer_wr_w;                
+                next_pointer_wr_r2 <= next_pointer_wr_w;
+                next_pointer_wr_r3 <= next_pointer_wr_w;                
             end
         end
-    // the bytes in fifo register fresh
+    // the read pointer update, pointer_rd_rx
+        always @(posedge clk or negedge rst) begin
+            if (!rst || !n_clr_i) begin
+                pointer_rd_r1 <= 16'd0;
+                pointer_rd_r2 <= 16'd0;
+                pointer_rd_r3 <= 16'd0;                
+            end
+            else if ((n_re_i == 1'b0) && (p_empty_w == 1'b0) || (n_we_i == 1'b0) && (p_full_w == 1'b1)) begin
+                if (pointer_rd_w >= DEPTH-1) begin
+                    pointer_rd_r1 <= 16'd0;
+                    pointer_rd_r2 <= 16'd0;
+                    pointer_rd_r3 <= 16'd0;
+                end
+                else begin
+                    pointer_rd_r1 <= pointer_rd_w + 1'b1;
+                    pointer_rd_r2 <= pointer_rd_w + 1'b1;
+                    pointer_rd_r3 <= pointer_rd_w + 1'b1;
+                end
+            end
+            else begin
+                pointer_rd_r1 <= pointer_rd_w;
+                pointer_rd_r2 <= pointer_rd_w;
+                pointer_rd_r3 <= pointer_rd_w;
+            end
+        end
+    // the fifo status register update, p_empty_r and p_full_r
+        always @(posedge clk or negedge rst) begin  
+            if (!rst || !n_clr_i) begin
+                p_empty_r   <= 3'b111;
+                p_full_r    <= 3'b000;   
+                p_nearfull_r<= 3'b000;  
+            end
+            else begin
+                p_empty_r   <= {p_empty_condition_w,p_empty_condition_w,p_empty_condition_w};
+                p_full_r    <= {p_full_condition_w,p_full_condition_w,p_full_condition_w};
+                p_nearfull_r<= {p_nearfull_condition_w,p_nearfull_condition_w,p_nearfull_condition_w};
+            end
+        end
+        always @(posedge clk or negedge rst) begin
+            if (!rst || !n_clr_i) begin
+                p_over_r <= 3'b000;
+            end
+            else if ((p_full_w == 1'b1)&&(n_we_i == 1'b0)&&(n_re_i == 1'b1)) begin
+                p_over_r <= 3'b111;
+            end
+            else if (p_full_w == 1'b0) begin
+                p_over_r <= 3'b000;
+            end
+            else begin
+                p_over_r <= {p_over_w,p_over_w,p_over_w};
+            end
+        end
+    // the bytes in fifo register update
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin
                 bytes_in_fifo_r <= 16'd0;              
             end
-            else if (p_empty_w == 1'b1) begin
-                bytes_in_fifo_r <= 16'd0;
-            end
-            else if (p_full_w == 1'b1) begin
-                bytes_in_fifo_r <= DEPTH;
-            end
-            else if ((n_re_i == 1'b0)) begin
-                bytes_in_fifo_r <= bytes_in_fifo_r - 1'b1;
-            end
-            else if ((n_we_i == 1'b0)) begin
-                bytes_in_fifo_r <= bytes_in_fifo_r + 1'b1;
+            else if (pointer_wr_w <= pointer_rd_w) begin
+                bytes_in_fifo_r <= pointer_rd_w - pointer_wr_w + DEPTH;           
             end
             else begin
-                bytes_in_fifo_r <= bytes_in_fifo_r;
+                bytes_in_fifo_r <= pointer_wr_w - pointer_rd_w;
             end
         end
-    // the read pointer fresh
-        always @(posedge clk or negedge rst) begin
-            if (!rst || !n_clr_i) begin
-                pointer_rd_r <= 16'd0;                
-            end
-            else if ((n_re_i == 1'b0) && (p_empty_w == 1'b0)) begin
-                if (pointer_rd_r >= DEPTH-1) begin
-                    pointer_rd_r <= 8'd0;
-                end
-                else begin
-                    pointer_rd_r <= pointer_rd_r + 1'b1;
-                end
-            end
-            else begin
-                pointer_rd_r <= pointer_rd_r;
-            end
-        end
-    // Memory fresh
+    // Memory update
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
                 // it is too complex to initial the memory array                

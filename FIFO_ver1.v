@@ -88,7 +88,7 @@ module  FIFO_ver1
                 next_pointer_wr_r <= next_pointer_wr_r;
             end
         end
-    // the bytes in fifo register fresh
+    // the bytes in fifo register fresh  // logic is not good!
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin
                 bytes_in_fifo_r <= 16'd0;              

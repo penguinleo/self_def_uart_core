@@ -66,11 +66,20 @@ module RxCore(
     input   clk,
     input   rst,
     // fifo control signal
-        output [7:0]    data_o,
-        input           n_rd_i,     // the fifo read signal
-        input           n_clr_i,	// empty the fifo
-        output          p_empty_o,  // the fifo is empty
-        output [15:0]   bytes_in_fifo_o,
+        output [7:0]    Data_o,
+        input           n_Rd_i,         // the fifo read signal
+        input           n_Clr_i,	    // empty the fifo
+        input           p_Enable_i,     // module Enable signal
+        input [15:0]    RxTimeOutSet_i, // Rx Time out set value
+        input           p_FrameFunctionEnable_i,
+        input           n_RxFrameInfo_Rd_i, // the rd signal for frame information
+    // fifo status signal
+        output          p_Empty_o,  // the fifo is empty
+        output          p_NearFull_o,
+        output          p_Full_o,
+        output          p_Over_o,
+        output [15:0]   RxFifoLevel_o,
+        output          RxFrameInfo,
     // frame info rd control
     	input 			n_rd_frame_fifo_i,
     	output [27:0]	frame_info_o,
@@ -185,7 +194,11 @@ module RxCore(
 		.ParityErrorNum_o(ParityErrorNum_o)
         );
 
-    FIFO_ver1 #(.DEPTH(8'd128)) RxCoreFifo (
+    FIFO_ver2 #(
+        .DEPTH(8'd128),
+        .WIDTH(16'd7)
+        ) 
+    RxCoreFifo (
         .clk(clk),
         .rst(rst),
         .data_i(Data_w),
@@ -194,6 +207,8 @@ module RxCore(
         .n_clr_i(n_clr_i),
         .data_o(data_o),
         .bytes_in_fifo_o(bytes_in_fifo_o),
+        .p_over_o(),
+        .p_full_o(),
         .p_empty_o(p_empty_o),
         .p_full_o(p_full_w)
         );

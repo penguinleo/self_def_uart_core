@@ -7,7 +7,7 @@
 // Revise   :   2019-10-19 11:23:02
 // Editor   :   sublime text3, tab size (4)
 // Comment  :   this fifo was built in the module the interface is similar with the 
-//              IP core from the microsemi
+//              IP core from the Xilinx Zynq
 // 
 // Input Signal List:
 //      1   :   clk,    the system input clock signal, the frequency is greater than 40MHz

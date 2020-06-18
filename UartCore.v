@@ -66,7 +66,10 @@ module UartCore(
     wire [3:0]  RoundUpNum_w;
     wire [3:0]  RoundDownNum_w;
     wire [3:0]  AcqNumPerBit_w;
-    wire [15:0] BytesInFifo_w;
+    wire [15:0] RxFIFO_Level_w;
+    wire [15:0] RxTimeOutSet_w;
+    wire [27:0] RxFrameInfo_w;
+    wire        p_RxFrame_Func_En_w;
     wire        p_ParityEnable_w;
     wire        p_BigEnd_w;
     wire        ParityMethod_w; 
@@ -153,7 +156,6 @@ module UartCore(
             .p_Full_o(p_RxFIFO_Full_w),
             .p_Over_o(p_RxFIFO_Over_w),
             .RxFifoLevel_o(RxFIFO_Level_w),
-            .BytesInFifo_o(BytesInFifo_w),
             .RxFrameInfo(RxFrameInfo_w),
             .AnsDelayTime_o(AnsDelayTime_w),
             .p_RxFIFO_Empty_o(p_RxFrame_Empty_w),

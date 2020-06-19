@@ -158,7 +158,7 @@ module UartCore(
             .RxFifoLevel_o(RxFIFO_Level_w),
             .RxFrameInfo(RxFrameInfo_w),
             .AnsDelayTime_o(AnsDelayTime_w),
-            .p_RxFIFO_Empty_o(p_RxFrame_Empty_w),
+            .p_RxFrame_Empty_o(p_RxFrame_Empty_w),
             .p_RxParityErr_o(p_RxParityErr_w),
             .p_RxFrameErr_o(p_RxFrameErr_w),
         // Rx and Tx encode control output
@@ -173,10 +173,7 @@ module UartCore(
             .acqurate_stamp_i(acqurate_stamp_i),
             .millisecond_stamp_i(millisecond_stamp_i),
             .second_stamp_i(second_stamp_i),
-        // .ParityErrorNum_o(ParityErrorNum_o),
-        // .p_DataReceived_o(p_DataReceived_w),
-        // .p_BaudrateError_o(),
-        // .p_ParityError_o(),
+        // the receive signal
         .Rx_i(Rx_i)
     );
 

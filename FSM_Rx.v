@@ -27,9 +27,10 @@
 // Input Signal List:
 //      1   |   clk         	:   clock signal
 //      2   |   rst         	:   reset signal
-//      3   |   Rx_Synch_i		:	The sychronation signal at the beginning of each byte
-// 		4	|	Bit_Synch_i 	:	The sychronation signal at the end of each bit, the state machine driver signal
-// 		5	|	AcqSig_i		:	The Acquisition signal from the Baudrate Generate Module, same signal with the ShiftRegister_Rx input signal.
+//      3   |   p_Enable_i      :   Module enable signal, which would lock the state machine at INTERVAL state
+//      4   |   Rx_Synch_i		:	The sychronation signal at the beginning of each byte
+// 		5	|	Bit_Synch_i 	:	The sychronation signal at the end of each bit, the state machine driver signal
+// 		6	|	AcqSig_i		:	The Acquisition signal from the Baudrate Generate Module, same signal with the ShiftRegister_Rx input signal.
 // 		7	|	ParityEnable_i	:	The Parity method control signal, from the control module
 // Output Signal List:
 //      1   |   State_o			:   The state machine output, define each bit in byte  
@@ -42,6 +43,7 @@ module FSM_Rx(
     // System signal definition
         input           clk,
         input           rst,
+        input           p_Enable_i,
     // signal from ShiftRegister_Rx
         input           Rx_Synch_i,         // the triggle signal that a byte is running on the wire
         input           Bit_Synch_i,        // the bit in the byte has been received successfully
@@ -120,7 +122,7 @@ module FSM_Rx(
             else begin
                 case(state_w)
                     INTERVAL: begin
-                        if (Rx_Synch_i == 1'b1) begin
+                        if ((Rx_Synch_i == 1'b1)&&(p_Enable_i == ENABLE)) begin
                             state_A_r <= STARTBIT;                              
                             state_B_r <= STARTBIT;
                             state_C_r <= STARTBIT;

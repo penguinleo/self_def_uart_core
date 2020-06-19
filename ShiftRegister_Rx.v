@@ -71,7 +71,7 @@
 //                                  and fresh at the STARTBIT state.
 //          2020-2-11
 //              1   |   Mod_1   |   The Byte_o data definition was changed as below
-//                                  Bit     |   11  |   10  |   9   |   8   |   7   |   6   |   5   |   4   |   3   |   2   |   1   |   0   |
+//                                  BitIndex|   11  |   10  |   9   |   8   |   7   |   6   |   5   |   4   |   3   |   2   |   1   |   0   |
 //                                  Littel  | Start |   D0  |   D1  |   D2  |   D3  |   D4  |   D5  |   D6  |   D7  | Parity|  Stop |   X
 //                                  Big     |  bit  |   D7  |   D6  |   D5  |   D4  |   D3  |   D2  |   D1  |   D0  |  Bit  |  Bit  |   X
 // -----------------------------------------------------------------------------
@@ -96,12 +96,14 @@ module ShiftRegister_Rx(
         // output          p_ParityCalTrigger_o  // the signal trigger the parity generate module
     );
     // register definition
+        reg [3:0]   shift_syn_rx_r;     // the synchronize shift register for the receive port
         reg [2:0]   shift_acq_r;        // the acquisition signal delay register
         reg [2:0]   shift_reg_r;        // synchronousing the asynchronous signal 
         reg [3:0]   bit_width_cnt_r;   // this register was applied to measure the width of the rx signal 
         reg [11:0]  byte_r;             // this register is working like a shift register
         reg         parity_error_r;     // the parity fail
     // wire definition 
+        wire        filter_rx_w;        // the filter output
         wire        falling_edge_rx_w;  // the falling edge of the rx port
         wire        acqsig_dly_1clk_w;  // the AcqSig_i delay 1 clock output
         wire        acqsig_dly_2clk_w;  // the AcqSig_i delay 2 clock output
@@ -122,6 +124,7 @@ module ShiftRegister_Rx(
             parameter   WRONG       = 1'b1;
             parameter   RIGHT       = 1'b0;  
     // wire assign 
+        assign filter_rx_w          = (shift_syn_rx_r[3]&&shift_syn_rx_r[2])||(shift_syn_rx_r[2]&&shift_syn_rx_r[1])||(shift_syn_rx_r[1]&&shift_syn_rx_r[3]);
         assign falling_edge_rx_w    = shift_reg_r[2] & !shift_reg_r[1]; // falling edge of the rx
         assign acqsig_dly_1clk_w    = shift_acq_r[0];
         assign acqsig_dly_2clk_w    = shift_acq_r[1];
@@ -134,6 +137,15 @@ module ShiftRegister_Rx(
         assign Byte_o               = byte_r;
         assign BitWidthCnt_o        = bit_width_cnt_r;
         // assign p_ParityCalTrigger_o = (State_i == PARITYBIT) & (acquisite_time_w == 1'b1) & (AcqSig_i == 1'b1);
+    // Filter for the rx port
+        always @(posedge clk or negedge rst) begin
+            if (!rst) begin
+                shift_syn_rx_r <= 4'b1111;              // remenber that the rx signal should be initial high!   
+            end
+            else begin
+                shift_syn_rx_r <= {shift_syn_rx_r[2:0], Rx_i};
+            end
+        end
     // Shift register for AcqSig_i delay
         always @(posedge clk or negedge rst) begin
             if (!rst) begin
@@ -149,7 +161,7 @@ module ShiftRegister_Rx(
                 shift_reg_r <= 3'b000;            
             end
             else if (AcqSig_i == 1'b1) begin
-                shift_reg_r <= {shift_reg_r[1:0],Rx_i};
+                shift_reg_r <= {shift_reg_r[1:0],filter_rx_w};
             end
             else begin
                 shift_reg_r <= shift_reg_r;

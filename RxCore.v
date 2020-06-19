@@ -80,29 +80,30 @@ module RxCore(
         output          p_Over_o,
         output [15:0]   RxFifoLevel_o,
         output          RxFrameInfo,
+        output [15:0]   AnsDelayTime_o,
+        output          p_RxFrame_Empty_o,
+        output          p_RxParityErr_o,
+        output          p_RxFrameErr_o,
+    // Rx and Tx encode control signal
+        input           p_ParityEnable_i,
+        input           p_BigEnd_i,
+        input           ParityMethod_i,
+    // the baudsig from the baudrate generate module
+        input           AcqSig_i,   // acquistion signal
+        input           BaudSig_i,    
     // frame info rd control
     	input 			n_rd_frame_fifo_i,
     	output [27:0]	frame_info_o,
     // the baudsig from the baudrate generate module
         input           AcqSig_i,   // acquistion signal
         input 			BaudSig_i,
-    // the rx core control signal
-        input           p_ParityEnable_i,
-        input           p_BigEnd_i,
-        input           ParityMethod_i,
-        input [3:0]     AcqNumPerBit_i,
+        input [3:0]     AcqNumPerBit_i,  
     // time stamp input
 		input [3:0]		acqurate_stamp_i,
 		input [11:0]	millisecond_stamp_i,
 		input [31:0]	second_stamp_i,    	
-    // the error flag signal
-    	output  [7:0]   ParityErrorNum_o,
-        // output           p_BaudrateError_o,  // the Baudrate error
-        // output           p_ParityError_o,    // the Parity error
-    // the interface with the AnsDelayTimeMeasure module
-    	output 		   	p_DataReceived_o,
     // the rx signal
-        input           Rx_i            
+        input           Rx_i
     );
     // register definition
         // NONE
@@ -134,6 +135,7 @@ module RxCore(
     FSM_Rx StateMachine(
         .clk(clk),
         .rst(rst),
+        .p_Enable_i(p_Enable_i),
         .Rx_Synch_i(Rx_Synch_w),
         .Bit_Synch_i(Bit_Synch_w),
         .AcqSig_i(AcqSig_i),
@@ -203,14 +205,14 @@ module RxCore(
         .rst(rst),
         .data_i(Data_w),
         .n_we_i(n_we_w),
-        .n_re_i(n_rd_i),
-        .n_clr_i(n_clr_i),
-        .data_o(data_o),
-        .bytes_in_fifo_o(bytes_in_fifo_o),
-        .p_over_o(),
-        .p_full_o(),
-        .p_empty_o(p_empty_o),
-        .p_full_o(p_full_w)
+        .n_re_i(n_Rd_i),
+        .n_clr_i(n_Clr_i),
+        .data_o(Data_o),
+        .bytes_in_fifo_o(RxFifoLevel_o),
+        .p_over_o(p_Over_o),
+        .p_full_o(p_Full_o),
+        .p_empty_o(p_Empty_o),
+        .p_full_o(p_Full_o)
         );
     
 

@@ -27,6 +27,7 @@
 //      1   :   clk, the system input clock signal, the frequency is greater than 40MHz
 //      2   :   rst, the system reset signal, the module should be reset asynchronously,
 //                   and must be released synchronously with the clock; 
+//      3   :   p_Enable_i, the module enable signal, which could lock the state machine at the INTERVAL state
 //      3   :   p_BaudSig_i, the baudrate signal from the baudrate module to drive the FSM.
 //                   this signal only last 1 clk.
 //      4   :   p_FiFoEmpty_i, the empty signal of the fifo, if not empty the FSM start. 
@@ -40,6 +41,7 @@
 module FSM(
     input           clk,
     input           rst,
+    input           p_Enable_i,
     input           p_BaudSig_i,
     input           p_FiFoEmpty_i,
     input           ParityEnable_i,
@@ -122,7 +124,7 @@ module FSM(
             else begin
                 case(state_w)
                     INTERVAL:   begin
-                        if (p_FiFoEmpty_i == NONEMPTY & p_BaudSig_i == 1'b1) begin
+                        if (p_FiFoEmpty_i == NONEMPTY & p_BaudSig_i == 1'b1 & p_Enable_i == ENABLE) begin
                             state_A_r <= STARTBIT;
                             state_B_r <= STARTBIT;
                             state_C_r <= STARTBIT;

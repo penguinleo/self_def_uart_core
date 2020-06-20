@@ -140,7 +140,6 @@ module RxCore(
         .Bit_Synch_i(Bit_Synch_w),
         .AcqSig_i(AcqSig_i),
         .p_ParityEnable_i(p_ParityEnable_i),
-        // .p_ParityCalTrigger_o(p_ParityCalTrigger_w),
         .State_o(State_w),
         .BitCounter_o(BitCounter_w)
         );
@@ -173,13 +172,9 @@ module RxCore(
 		.rst(rst),
 		.n_we_o(n_we_w),
 		.data_o(Data_w),
-		.p_full_i(p_full_w),
 		.BaudSig_i(BaudSig_i),
 		.byte_i(Byte_w),
-		.Bit_Synch_i(Bit_Synch_w),
 		.Byte_Synch_i(Byte_Synch_w),
-		.State_i(State_w),
-		// .BitWidthCnt_i(BitWidthCnt_w),
 		.acqurate_stamp_i(acqurate_stamp_i),
 		.millisecond_stamp_i(millisecond_stamp_i),
 		.second_stamp_i(second_stamp_i),
@@ -190,6 +185,8 @@ module RxCore(
 		.ParityCalData_o(ParityData_w),
 		.p_ParityCalTrigger_o(p_ParityCalTrigger_w),
 		.ParityResult_i(ParityResult_w),
+        .p_ParityErr_o(p_RxParityErr_o),
+        .p_FrameErr_o(p_RxFrameErr_o),
 		.ParityErrorNum_o(ParityErrorNum_o)
         );
 

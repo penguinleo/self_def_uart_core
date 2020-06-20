@@ -121,7 +121,6 @@ module UartCore(
             .RxFIFO_Level_i(RxFIFO_Level_w),
             .p_RxFrame_Func_En_o(p_RxFrame_Func_En_w),
             .RxFrameInfo_i(RxFrameInfo_w),
-            .AnsDelayTime_i(AnsDelayTime_w),
             .p_RxFrame_Empty_i(p_RxFrame_Empty_w),
             .n_RxFrameInfo_Rd_o(n_RxFrameInfo_Rd_w),
         // Rx & Tx encode control output
@@ -157,7 +156,6 @@ module UartCore(
             .p_Over_o(p_RxFIFO_Over_w),
             .RxFifoLevel_o(RxFIFO_Level_w),
             .RxFrameInfo(RxFrameInfo_w),
-            .AnsDelayTime_o(AnsDelayTime_w),
             .p_RxFrame_Empty_o(p_RxFrame_Empty_w),
             .p_RxParityErr_o(p_RxParityErr_w),
             .p_RxFrameErr_o(p_RxFrameErr_w),
@@ -165,6 +163,9 @@ module UartCore(
             .p_ParityEnable_i(p_ParityEnable_w),
             .p_BigEnd_i(p_BigEnd_w),
             .ParityMethod_i(ParityMethod_w),
+        // Rx Time control and flag
+            .RxTimeOutSet_i(RxTimeOutSet_w),
+            .p_RxTimeOut_o(p_RxTimeOut_w),
         // Baudrate generate module
             .AcqSig_i(AcqSig_w),
             .BaudSig_i(BaudSig_w),

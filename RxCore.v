@@ -80,7 +80,6 @@ module RxCore(
         output          p_Over_o,
         output [15:0]   RxFifoLevel_o,
         output          RxFrameInfo,
-        output [15:0]   AnsDelayTime_o,
         output          p_RxFrame_Empty_o,
         output          p_RxParityErr_o,
         output          p_RxFrameErr_o,
@@ -88,6 +87,9 @@ module RxCore(
         input           p_ParityEnable_i,
         input           p_BigEnd_i,
         input           ParityMethod_i,
+    // Rx Time control and flag
+        input [15:0]    RxTimeOutSet_i,
+        output          p_RxTimeOut_o,
     // the baudsig from the baudrate generate module
         input           AcqSig_i,   // acquistion signal
         input           BaudSig_i,    

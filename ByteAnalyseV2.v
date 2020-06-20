@@ -32,11 +32,8 @@
 //      3   :   p_full_i,                   :   the receive fifo full signal, positive is full;
 //      4   :   BaudSig_i,                  :   the baudrate signal
 //      5   :   byte_i[11:0]                :   the byte data from the shift register, acquisited from the rx wire;
-//      6   :   Bit_Synch_i                 :   the bit synchronouse signal, generated in the shift register. This 
-//                                              signal is synchronoused with the acquisite opperation.
 //      7   :   Byte_Synch_i                :   the byte synchronouse signal, generated in the stop bit acquisite
 //                                              point.
-//      8   :   State_i[4:0]                :   the state machine output, from the FSM.
 //      9   :   acqurate_stamp_i[3:0]       :   The time stamp(0.1ms) from other module. The equivalent of this data 
 //                                              is 0.1ms. The range of data is 0 ~ 9;
 //      10  :   millisecond_stamp_i[11:0]   :   The time stamp(millisecond) from other module. The equivalent of this
@@ -56,7 +53,7 @@
 //      15  :   ParityResult_i              :   The parity result from the parity calculate module. This module would 
 //                                              send out the trigger signal to the parity calculate module.
 // Output Signal List:
-//      1   :   n_we_o,
+//      1   :   n_we_o                      :   
 // Note:
 //      2020-02-16  This module should be seperated from the state machine of the Rx machine.
 //                  The data process could compensate many clocks, thus the baudrate would be
@@ -68,20 +65,15 @@ module ByteAnalyseV2(
     // the interface with fifo 
         output          n_we_o,
         output  [7:0]   data_o,
-        input           p_full_i,
     // the interface with the baudrate module
         input           BaudSig_i,
     // the interface with shift register
         input   [11:0]  byte_i,
-        input           Bit_Synch_i,
         input           Byte_Synch_i,
-    // the interface with the FSM
-        input   [4:0]   State_i,
-        // input   [3:0]   BitWidthCnt_i,
     // the interface with the Time Stamp Module
-        input   [3:0]    acqurate_stamp_i,
-        input   [11:0]   millisecond_stamp_i,
-        input   [31:0]   second_stamp_i,
+        input   [3:0]   acqurate_stamp_i,
+        input   [11:0]  millisecond_stamp_i,
+        input   [31:0]  second_stamp_i,
     // the control register
         input           p_ParityEnable_i,
         input           p_BigEnd_i,
@@ -92,6 +84,9 @@ module ByteAnalyseV2(
         output  [7:0]   ParityCalData_o,
         output          p_ParityCalTrigger_o,
         input           ParityResult_i,
+    // status signal 
+        output          p_ParityErr_o,    // Parity error status flag
+        output          p_FrameErr_o,     // Stop bit missing flag
         output  [7:0]   ParityErrorNum_o
     );
     // register definition
@@ -99,12 +94,14 @@ module ByteAnalyseV2(
             reg [4:0]       state_r;        // the state machine register of the module
             reg [11:0]      byte_r;   // the buffer for the input data
             reg             parity_trig_r;
-            reg             parity_result_r;
+            reg [2:0]       parity_result_r/*Synthesis syn_preserve = 1*/;
+            reg [2:0]       frame_error_r/*Synthesis syn_preserve = 1*/;
             reg [7:0]       fifo_data_r;        // the data that sent to the fifo
             reg             n_we_r;             // the we signal of the fifo
             reg             n_rd_frame_fifo_r;  // 
             reg [2:0]       rd_frame_fifo_shift_r;
-            reg [7:0]       parity_error_num_r; // the parity error number
+            reg [7:0]       parity_error_num_r; // the parity error number    
+
         // the time stamp
             reg [31:0]  t0_s_stamp_r;
             reg [11:0]  t0_ms_stamp_r;
@@ -128,6 +125,8 @@ module ByteAnalyseV2(
             wire        parity_bit_w;
             wire        stop_bit_w;
             wire        falling_edge_rd_fifo_w;
+            wire        parity_result_w;
+            wire        frame_error_w;
         // Frame0 information definition
             wire [11:0] frame0_stamp_ms_w;
             wire [3:0]  frame0_stamp_us_w;
@@ -160,6 +159,9 @@ module ByteAnalyseV2(
         // Parity check results
             parameter PAR_TRUE  = 1'b1;
             parameter PAR_FALSE = 1'b0;
+        // Frame Error Chck
+            parameter FRM_TRUE  = 1'b0;
+            parameter FRM_FALSE = 1'b1; 
     // Logic definition
         // output logic definition
             assign ParityCalData_o      = byte_r[10:3];
@@ -167,6 +169,8 @@ module ByteAnalyseV2(
             assign p_ParityCalTrigger_o = parity_trig_r;
             assign n_we_o               = n_we_r;
             assign ParityErrorNum_o     = parity_error_num_r;
+            assign p_ParityErr_o        = ~parity_result_w;
+            assign p_FrameErr_o         = frame_error_w;
         // inner logic signal
             assign start_bit_w              = byte_r[11];
             assign little_end_data_w        = {
@@ -179,6 +183,16 @@ module ByteAnalyseV2(
                                                 };
             assign parity_bit_w             = byte_r[2];
             assign stop_bit_w               = byte_r[1];
+            assign parity_result_w          = (
+                                                    (parity_result_r[0]&[parity_result_r[1])
+                                                ||  (parity_result_r[1]&[parity_result_r[2])
+                                                ||  (parity_result_r[2]&[parity_result_r[0])
+                                            );
+            assign frame_error_w            = (
+                                                    (frame_error_r[0]&frame_error_r[1])
+                                                ||  (frame_error_r[1]&frame_error_r[2])
+                                                ||  (frame_error_r[2]&frame_error_r[0])
+                                            ) ;
         // Frame0 and Frame1 logic definition
             assign frame0_stamp_ms_w = frame0_info_r[17:16];
             assign frame0_stamp_us_w = frame0_info_r[15:12];
@@ -266,16 +280,32 @@ module ByteAnalyseV2(
         // parity results register
             always @(posedge clk or negedge rst) begin
                 if (!rst) begin
-                    parity_result_r <= PAR_TRUE;                
+                    parity_result_r <= {PAR_TRUE,PAR_TRUE,PAR_TRUE};                
                 end
                 else if ((state_r == CHCK) && (p_ParityEnable_i == ENABLE)) begin
-                    parity_result_r <= (ParityResult_i ^~ parity_bit_w);
+                    parity_result_r <= {
+                        ParityResult_i ^ ~parity_bit_w,
+                        ParityResult_i ^ ~parity_bit_w,
+                        ParityResult_i ^ ~parity_bit_w,
+                    };
                 end
                 else if (p_ParityEnable_i == DISABLE) begin
-                    parity_result_r <= PAR_TRUE;
+                    parity_result_r <= {PAR_TRUE,PAR_TRUE,PAR_TRUE};
                 end
                 else begin
                     parity_result_r <= parity_result_r;
+                end
+            end
+        // frame error detect register
+            always @(posedge clk or negedge rst) begin
+                if (!rst) begin
+                    frame_error_r <= {FRM_TRUE, FRM_TRUE, FRM_TRUE};                  
+                end
+                else if (state_r == CHCK) begin
+                    frame_error_r <= {~stop_bit_w,~stop_bit_w,~stop_bit_w};   // if the stop bit != 1, error generate
+                end 
+                else begin
+                    frame_error_r <= {frame_error_w,frame_error_w,frame_error_w};
                 end
             end
         // FIFO operation
@@ -283,7 +313,7 @@ module ByteAnalyseV2(
                 if (!rst) begin
                     n_we_r <= 1'b1;             
                 end
-                else if ((state_r == FIFO) && (parity_result_r == PAR_TRUE)) begin
+                else if ((state_r == FIFO) && (parity_result_w == PAR_TRUE) && (frame_error_w == FRM_TRUE)) begin
                     n_we_r <= 1'b0;
                 end
                 else begin
@@ -360,7 +390,7 @@ module ByteAnalyseV2(
                     end
                 end
                 else if (state_r == FIFO) begin
-                    if (parity_result_r == PAR_TRUE) begin
+                    if (parity_result_w == PAR_TRUE) begin
                         byte_num_cnt_r <= byte_num_cnt_r + 1'b1;
                     end
                     else begin
@@ -526,7 +556,7 @@ module ByteAnalyseV2(
                 if (!rst) begin
                     parity_error_num_r <= 8'd0;             
                 end
-                else if ((state_r == FIFO) && (parity_result_r == PAR_FALSE)) begin
+                else if ((state_r == FIFO) && (parity_result_w == PAR_FALSE)) begin
                     parity_error_num_r <= parity_error_num_r + 1'b1;
                 end
                 else begin

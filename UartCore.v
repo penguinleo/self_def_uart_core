@@ -68,6 +68,7 @@ module UartCore(
     wire [3:0]  AcqNumPerBit_w;
     wire [15:0] RxFIFO_Level_w;
     wire [15:0] RxTimeOutSet_w;
+    wire [15:0] RxTimeCnt_w;
     wire [27:0] RxFrameInfo_w;
     wire        p_RxFrame_Func_En_w;
     wire        p_ParityEnable_w;
@@ -122,6 +123,7 @@ module UartCore(
             .RxFIFO_Level_i(RxFIFO_Level_w),
             .p_RxFrame_Func_En_o(p_RxFrame_Func_En_w),
             .RxFrameInfo_i(RxFrameInfo_w),
+            .AnsDelayTime_i(RxTimeCnt_w),
             .p_RxFrame_Empty_i(p_RxFrame_Empty_w),
             .n_RxFrameInfo_Rd_o(n_RxFrameInfo_Rd_w),
         // Rx & Tx encode control output
@@ -167,9 +169,9 @@ module UartCore(
         // Rx Time control and flag
             .RxTimeOutSet_i(RxTimeOutSet_w),
             .p_RxTimeOut_o(p_RxTimeOut_w),
-            .RxDlyTime_o(),
-            .p_TimeCntStartSig_i(),
-            .p_TimeCntResetSig_i(),
+            .RxDlyTime_o(RxTimeCnt_w),
+            .p_TimeCntStartSig_i(p_TxFIFO_Empty_w),
+            .p_TimeCntResetSig_i(1'b0),   // this signal should be controlled by the control module
         // Baudrate generate module
             .AcqSig_i(AcqSig_w),
             .BaudSig_i(BaudSig_w),

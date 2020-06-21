@@ -70,7 +70,6 @@ module RxCore(
         input           n_Rd_i,         // the fifo read signal
         input           n_Clr_i,	    // empty the fifo
         input           p_Enable_i,     // module Enable signal
-        input [15:0]    RxTimeOutSet_i, // Rx Time out set value
         input           p_FrameFunctionEnable_i,
         input           n_RxFrameInfo_Rd_i, // the rd signal for frame information
     // fifo status signal
@@ -90,9 +89,9 @@ module RxCore(
     // Rx Time control and flag
         input [15:0]    RxTimeOutSet_i,
         output          p_RxTimeOut_o,
-    // the baudsig from the baudrate generate module
-        input           AcqSig_i,   // acquistion signal
-        input           BaudSig_i,    
+        output[15:0]    RxDlyTime_o,
+        input           p_TimeCntStartSig_i,
+        input           p_TimeCntResetSig_i,
     // frame info rd control
     	input 			n_rd_frame_fifo_i,
     	output [27:0]	frame_info_o,
@@ -190,6 +189,17 @@ module RxCore(
         .p_ParityErr_o(p_RxParityErr_o),
         .p_FrameErr_o(p_RxFrameErr_o),
 		.ParityErrorNum_o(ParityErrorNum_o)
+        );
+    AnsDelayTimeMeasure_ver2 DlyTimeMea(
+        .clk(clk),
+        .rst(rst),
+        .TimeOutSet_i(RxTimeOutSet_i),
+        .p_TimeCntHoldSig_i(Byte_Synch_w),
+        .p_TimeCntStartSig_i(p_TimeCntStartSig_i),
+        .p_TimeCntResetSig_i(p_TimeCntResetSig_i),
+        .TimeCnt_o(RxDlyTime_o),
+        .p_TimeOut_o(p_RxTimeOut_o),
+        .AcqSig_i(AcqSig_i)
         );
 
     FIFO_ver2 #(

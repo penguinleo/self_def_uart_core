@@ -77,6 +77,7 @@ module UartCore(
     wire        BaudSig_w;
     wire        p_SendFinished_w;
     wire        p_DataReceived_w;
+    wire        p_RxTimeOut_w;
     // logic definition
         assign BitCompensation_w = {RoundUpNum_w, RoundDownNum_w};
     CtrlCore ControlCore(
@@ -166,6 +167,9 @@ module UartCore(
         // Rx Time control and flag
             .RxTimeOutSet_i(RxTimeOutSet_w),
             .p_RxTimeOut_o(p_RxTimeOut_w),
+            .RxDlyTime_o(),
+            .p_TimeCntStartSig_i(),
+            .p_TimeCntResetSig_i(),
         // Baudrate generate module
             .AcqSig_i(AcqSig_w),
             .BaudSig_i(BaudSig_w),

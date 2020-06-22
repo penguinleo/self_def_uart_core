@@ -184,9 +184,9 @@ module ByteAnalyseV2(
             assign parity_bit_w             = byte_r[2];
             assign stop_bit_w               = byte_r[1];
             assign parity_result_w          = (
-                                                    (parity_result_r[0]&[parity_result_r[1])
-                                                ||  (parity_result_r[1]&[parity_result_r[2])
-                                                ||  (parity_result_r[2]&[parity_result_r[0])
+                                                    (parity_result_r[0]&parity_result_r[1])
+                                                ||  (parity_result_r[1]&parity_result_r[2])
+                                                ||  (parity_result_r[2]&parity_result_r[0])
                                             );
             assign frame_error_w            = (
                                                     (frame_error_r[0]&frame_error_r[1])
@@ -286,7 +286,7 @@ module ByteAnalyseV2(
                     parity_result_r <= {
                         ParityResult_i ^ ~parity_bit_w,
                         ParityResult_i ^ ~parity_bit_w,
-                        ParityResult_i ^ ~parity_bit_w,
+                        ParityResult_i ^ ~parity_bit_w
                     };
                 end
                 else if (p_ParityEnable_i == DISABLE) begin

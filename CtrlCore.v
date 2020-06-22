@@ -568,7 +568,7 @@ module CtrlCore(
                 InterruptMask_r1[15:8] <= {
                     1'b0,           1'b0,           1'b0,   IRQ_TOVR_OFF,
                     IRQ_TNFUL_OFF,  IRQ_TTRIG_OFF,  1'b0,   IRQ_TIMEOUT_OFF
-                }    
+                };    
             end
             else if (InterrputEnable1_Write_Access_w == ON ) begin
                 InterruptMask_r1[15:8] <= DataBus_i;
@@ -583,7 +583,7 @@ module CtrlCore(
                 InterruptMask_r1[7:0] <= {
                     IRQ_PARE_OFF,   IRQ_FRAME_OFF,  IRQ_ROVR_OFF,   IRQ_TFUL_OFF,
                     IRQ_TEMPTY_OFF, IRQ_RFULL_OFF,  IRQ_REMPTY_OFF, IRQ_RTRIG_OFF
-                }    
+                };    
             end
             else if (InterrputEnable2_Write_Access_w == ON ) begin
                 InterruptMask_r1[7:0] <= DataBus_i;
@@ -670,7 +670,7 @@ module CtrlCore(
                 BytesNumberInTxFifo_r1 <= TxFIFO_Level_i;
             end
             else begin
-                BytesNumberInTxFifo_r1 <= 16'd0
+                BytesNumberInTxFifo_r1 <= 16'd0;
             end
         end
     // Receive Time Out buffer fresh

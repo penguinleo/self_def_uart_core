@@ -205,7 +205,7 @@ module  FIFO_ver2
                 // it is too complex to initial the memory array                
             end
             else if ((n_we_i == 1'b0) && (p_full_w == 1'b0)) begin
-                memory[pointer_wr_r] <= data_i;
+                memory[pointer_wr_w] <= data_i;
             end
         end
     // output buffer
@@ -214,7 +214,7 @@ module  FIFO_ver2
                 output_data_r <= 8'd0;                
             end
             else if ((n_re_i == 1'b0) && (p_empty_w == 1'b0)) begin
-                output_data_r <= memory[pointer_rd_r];
+                output_data_r <= memory[pointer_rd_w];
             end
             else begin
                 output_data_r <= output_data_r;

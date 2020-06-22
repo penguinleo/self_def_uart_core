@@ -58,7 +58,7 @@ module  FIFO_ver1
         assign p_empty_o    = p_empty_w;
         assign p_full_o     = p_full_w;
         assign data_o       = output_data_r;
-        ass
+        // ass
     // the write pointer fresh
         always @(posedge clk or negedge rst) begin
             if (!rst || !n_clr_i) begin

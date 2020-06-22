@@ -51,8 +51,8 @@ module AnsDelayTimeMeasure_ver2(
 			parameter MAX 	= 16'hFFFF;
 	// logic definition
 		// assign p_over_limit_w 	= (delay_cnt_r >= ans_delay_limit_i);
-		assign WorkState_w 		= (WorkState_r[0]&&WorkState_r[1])||(WorkState_r[1]&&WorkState_r[2]))||(WorkState_r[2]&&WorkState_r[0]));
-		assign p_over_limit_w 	= (RxTimeCounter_r >= RxTimeOutSet_i);
+		assign WorkState_w 		= (WorkState_r[0]&&WorkState_r[1])||(WorkState_r[1]&&WorkState_r[2])||(WorkState_r[2]&&WorkState_r[0]);
+		assign p_over_limit_w 	= (RxTimeCounter_r >= TimeOutSet_i);
 		assign p_over_max_w 	= (RxTimeCounter_r >= MAX);
 		assign TimeCnt_o 		= RxTimeCounter_r;
 		assign p_TimeOut_o   	= (TimeOut_r[0]&&TimeOut_r[1])||(TimeOut_r[1]&&TimeOut_r[2])||(TimeOut_r[2]&&TimeOut_r[0]);
@@ -76,7 +76,7 @@ module AnsDelayTimeMeasure_ver2(
 			if (!rst) begin
 				RxTimeCounter_r	<= 16'd0;			
 			end
-			else if ((WorkState_w == WORK_ON) && (AcqSig_i == 1'b1)) begin
+			else if ((WorkState_w == COUNT) && (AcqSig_i == 1'b1)) begin
 				RxTimeCounter_r <= RxTimeCounter_r + 1'b1;
 			end
 			else if ((p_TimeCntStartSig_i == 1'b1) || (p_TimeCntResetSig_i == 1'b1)) begin
@@ -92,7 +92,7 @@ module AnsDelayTimeMeasure_ver2(
 	 			TimeOut_r <= 3'b111;	 			
 	 		end
 	 		else begin
-	 			TimeOut_r <= {p_over_limit_w,p_over_limit_w,p_over_limit_w}
+	 			TimeOut_r <= {p_over_limit_w,p_over_limit_w,p_over_limit_w};
 	 		end
 	 	end
 endmodule

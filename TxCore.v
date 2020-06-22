@@ -87,7 +87,7 @@ module TxCore(
             parameter NONEMPTY  = 1'b0;
     // logic definition
         assign p_SendFinished_w = (State_w == STOPBIT) && (p_FiFoEmpty_w == EMPTY) && (p_BaudSig_i == 1'b1);
-        assign n_enbaled_we_w   = (~p_Enable_i) || (n_we_i);
+        assign n_enbaled_we_w   = (~p_Enable_i) || (n_We_i);
         // output 
             assign p_Empty_o    = p_FiFoEmpty_w;
     FSM StateMachine(

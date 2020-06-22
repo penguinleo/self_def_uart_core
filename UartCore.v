@@ -57,6 +57,10 @@ module UartCore(
         input  [7:0]    DataBus_i,     
         output [7:0]    DataBus_o,     
         output          p_IrqSig_o, 
+    // the time stamp input
+        input [3:0]     acqurate_stamp_i,
+        input [11:0]    millisecond_stamp_i,
+        input [31:0]    second_stamp_i,
     // Uart port
         input           Rx_i,
         output          Tx_o
@@ -149,7 +153,6 @@ module UartCore(
             .n_Rd_i(n_RxFIFO_Rd_w),
             .n_Clr_i(n_RxFIFO_Clr_w),
             .p_Enable_i(p_RxCoreEn_w),
-            .RxTimeOutSet_i(RxTimeOutSet_w),
             .p_FrameFunctionEnable_i(p_RxFrame_Func_En_w),
             .n_RxFrameInfo_Rd_i(n_RxFrameInfo_Rd_w),
         // fifo status signal

@@ -218,7 +218,7 @@ module RxCore(
         .p_over_o(p_Over_o),
         .p_full_o(p_Full_o),
         .p_empty_o(p_Empty_o),
-        .p_full_o(p_Full_o)
+        .p_nearfull_o(p_NearFull_o)
         );
     
 

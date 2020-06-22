@@ -67,7 +67,7 @@
 // Note:  
 // 
 // -----------------------------------------------------------------------------   
-module BaudrateModule_Simplified(
+module BaudrateModule_ver2(
         input               clk,            //System input clock signal
         input               rst,            //System reset signal
     // The Acquisition Parameter definition

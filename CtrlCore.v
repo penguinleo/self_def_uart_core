@@ -777,10 +777,10 @@ module CtrlCore(
                 // Think about the fifo operation
             end
             else if (FrameAnsTimeInfo1_Read_Access_w == ON ) begin
-                // Think about the fifo operation
+                DataBus_r1 <= AnsDelayTime_i[15:8];
             end
             else if (FrameAnsTimeInfo2_Read_Access_w == ON ) begin
-                // Think about the fifo operation
+                DataBus_r1 <= AnsDelayTime_i[7:0];
             end
             else if (ReservedAddr3_Read_Access_w == ON ) begin
                 // Think about the fifo operation

@@ -136,7 +136,7 @@ module UartCore(
             .ParityMethod_o(ParityMethod_w)
     );
 
-    BaudrateModule_Simplified BaudGen(
+    BaudrateModule_ver2 BaudGen(
         .clk(clk),
         .rst(rst),
         .AcqPeriod_i(AcqPeriod_w),

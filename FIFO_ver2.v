@@ -1,11 +1,11 @@
 // -----------------------------------------------------------------------------
-// Copyright (c) 2019-2019 All rights reserved
+// Copyright (c) 2014-2019 All rights reserved
 // -----------------------------------------------------------------------------
-// Author   :   Javen Peng, pengjaven@gmail.com
-// File     :   FIFO_ver1.v
-// Create   :   2019-10-19 11:23:02
-// Revise   :   2019-10-19 11:23:02
-// Editor   :   sublime text3, tab size (4)
+// Author : Javen   penguinleo@163.com
+// File   : FIFO_ver2.v
+// Create : 2020-06-22 17:06:18
+// Revise : 2020-06-22 17:06:18
+// Editor : sublime text3, tab size (4)
 // Comment  :   this fifo was built in the module the interface is similar with the 
 //              IP core from the Xilinx Zynq
 // 
@@ -22,6 +22,7 @@
 //      2   :   empty_o,  the fifo empty signal
 //      3   :   full_o, the fifo full signal
 // -----------------------------------------------------------------------------
+
 module  FIFO_ver2
 #(
     parameter WIDTH = 16'd16,

@@ -135,7 +135,7 @@ module TxCore(
         ) TxCoreFifo (
         .clk(clk),
         .rst(rst),
-        .data_i(data_i),
+        .data_i(Data_i),
         .n_we_i(n_enbaled_we_w),
         .n_re_i(n_FifoRe_w),
         .n_clr_i(n_clr_i),

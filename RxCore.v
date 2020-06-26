@@ -78,7 +78,7 @@ module RxCore(
         output          p_Full_o,
         output          p_Over_o,
         output [15:0]   RxFifoLevel_o,
-        output          RxFrameInfo,
+        output [27:0]   RxFrameInfo,
         output          p_RxFrame_Empty_o,
         output          p_RxParityErr_o,
         output          p_RxFrameErr_o,
@@ -92,9 +92,6 @@ module RxCore(
         output[15:0]    RxDlyTime_o,
         input           p_TimeCntStartSig_i,
         input           p_TimeCntResetSig_i,
-    // frame info rd control
-    	input 			n_rd_frame_fifo_i,
-    	output [27:0]	frame_info_o,
     // the baudsig from the baudrate generate module
         input           AcqSig_i,   // acquistion signal
         input 			BaudSig_i,
@@ -102,7 +99,9 @@ module RxCore(
     // time stamp input
 		input [3:0]		acqurate_stamp_i,
 		input [11:0]	millisecond_stamp_i,
-		input [31:0]	second_stamp_i,    	
+		input [31:0]	second_stamp_i,  
+    // error counter
+        output [7:0]    ParityErrorNum_o,
     // the rx signal
         input           Rx_i
     );
@@ -133,6 +132,7 @@ module RxCore(
     // logic definition
     	assign p_DataReceived_w = Byte_Synch_w;
     	assign p_DataReceived_o = p_DataReceived_w;
+        assign RxFrameInfo = 28'h1234567;
     FSM_Rx StateMachine(
         .clk(clk),
         .rst(rst),
@@ -181,8 +181,8 @@ module RxCore(
 		.second_stamp_i(second_stamp_i),
 		.p_ParityEnable_i(p_ParityEnable_i),
 		.p_BigEnd_i(p_BigEnd_i),
-		.n_rd_frame_fifo_i(n_rd_frame_fifo_i),
-		.frame_info_o(frame_info_o),
+		.n_rd_frame_fifo_i(n_RxFrameInfo_Rd_i),
+		.frame_info_o(RxFrameInfo),
 		.ParityCalData_o(ParityData_w),
 		.p_ParityCalTrigger_o(p_ParityCalTrigger_w),
 		.ParityResult_i(ParityResult_w),

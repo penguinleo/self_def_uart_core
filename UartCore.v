@@ -65,7 +65,7 @@ module UartCore(
         input           Rx_i,
         output          Tx_o
     );
-    wire [11:0] AcqPeriod_w;
+    wire [15:0] AcqPeriod_w;
     wire [7:0]  BitCompensation_w;
     wire [3:0]  RoundUpNum_w;
     wire [3:0]  RoundDownNum_w;
@@ -74,6 +74,10 @@ module UartCore(
     wire [15:0] RxTimeOutSet_w;
     wire [15:0] RxTimeCnt_w;
     wire [27:0] RxFrameInfo_w;
+    wire [7:0]  TxData_w;
+    wire [7:0]  RxData_w;
+    wire [15:0] TxFIFO_Level_w;
+    wire [7:0]  ParityErrorNum_w;    // put it in the control core // del when added
     wire        p_RxFrame_Func_En_w;
     wire        p_ParityEnable_w;
     wire        p_BigEnd_w;
@@ -183,6 +187,8 @@ module UartCore(
             .acqurate_stamp_i(acqurate_stamp_i),
             .millisecond_stamp_i(millisecond_stamp_i),
             .second_stamp_i(second_stamp_i),
+        // error counter
+            .ParityErrorNum_o(ParityErrorNum_w),
         // the receive signal
         .Rx_i(Rx_i)
     );
@@ -211,16 +217,16 @@ module UartCore(
         .Tx_o(Tx_o) 
     );
 
-    AnsDelayTimeMeasure AnsDlyMea(
-        .clk(clk),
-        .rst(rst),
-        .p_SendFinished_i(p_SendFinished_w),
-        .p_DataReceived_i(p_DataReceived_w),
-        .p_sig_10MHz_i(p_sig_10MHz_i),
-        .n_rd_i(n_rd_frame_fifo_i),
-        .n_clr_i(n_clr_i),
-        .ans_delay_o(ans_delay_o)
-    );
+    // AnsDelayTimeMeasure AnsDlyMea(
+    //     .clk(clk),
+    //     .rst(rst),
+    //     .p_SendFinished_i(p_SendFinished_w),
+    //     .p_DataReceived_i(p_DataReceived_w),
+    //     .p_sig_10MHz_i(p_sig_10MHz_i),
+    //     .n_rd_i(n_rd_frame_fifo_i),
+    //     .n_clr_i(n_clr_i),
+    //     .ans_delay_o(ans_delay_o)
+    // );
 
 
 endmodule

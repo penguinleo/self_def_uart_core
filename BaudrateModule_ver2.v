@@ -71,7 +71,7 @@ module BaudrateModule_ver2(
         input               clk,            //System input clock signal
         input               rst,            //System reset signal
     // The Acquisition Parameter definition
-        input   [11:0]  AcqPeriod_i,        //The acquisition period base on the system clk
+        input   [15:0]  AcqPeriod_i,        //The acquisition period base on the system clk
     // The relationship between Acq and Baudrate
         input   [7:0]   BitCompensation_i,  //The compensation method, which result in bit width over limit, just put the minimum width error method! 
         // input   [7:0]   NegCompensation_i,  //The compensation method, which result in bit width below limit, reserved
@@ -83,13 +83,13 @@ module BaudrateModule_ver2(
     );
     // Register definition
         // input buffer
-            reg     [11:0]  acq_period_down_r;              // the data is come from the AcqPeriod_i   
-            reg     [11:0]  acq_period_up_r;                // the data is equal with AcqPeriod_i + 1
+            reg     [15:0]  acq_period_down_r;              // the data is come from the AcqPeriod_i   
+            reg     [15:0]  acq_period_up_r;                // the data is equal with AcqPeriod_i + 1
             reg     [3:0]   acq_up_time_limit_r;            // the period round up times, it is the PosCompensation_i[7:4]
             reg     [3:0]   acq_down_time_limit_r;          // the period round down times,it is the PosCompensation_i[3:0]
         // divider to generate the baudrate signal from the acquisition signal, the baud_divider_r = acq_num_counter_r + comp_num_counter_r
-            reg     [11:0]  acq_period_limit_r;             // it is choosen from the acq_period_down_r and acq_period_up_r
-            reg     [11:0]  acq_period_counter_r;           // the counter for the period 
+            reg     [15:0]  acq_period_limit_r;             // it is choosen from the acq_period_down_r and acq_period_up_r
+            reg     [15:0]  acq_period_counter_r;           // the counter for the period 
             reg     [3:0]   acq_down_time_cnt_r;            // the divider for the baud sig, count the normal acq signal, Note this counter count down from the limit to zero 
             reg     [3:0]   acq_up_time_cnt_r;              // the divider for the baud sig, count the compensated acq signal,Note this counter count down from the limit to zero    
             reg             acqsig_r;                       // the register of acquisition signal, which only last 1 clock
@@ -113,7 +113,7 @@ module BaudrateModule_ver2(
         // the 
     // Parameter definition
         // Default parameter
-            parameter       DEFAULT_PERIOD      = 12'd20;
+            parameter       DEFAULT_PERIOD      = 16'd20;
             parameter       DEFAULT_UP_TIME     = 4'd10;
             parameter       DEFAULT_DOWN_TIME   = 4'd5;
         // Byte width
@@ -129,14 +129,14 @@ module BaudrateModule_ver2(
             parameter       ACTIVE      = 1'b1;
     // Assign
         // State machine 
-            assign Time2Reload_w    =   (acq_period_counter_r == 12'd0);
+            assign Time2Reload_w    =   (acq_period_counter_r == 16'd0);
         // the comparation of the acq_up_time_cnt_r and acq_down_time_cnt_r
             assign AcqUpNumberReachLimit_w    = (acq_up_time_cnt_r == 4'd0);      // the register decrease to zero 
             assign AcqDownNumberReachLimit_w  = (acq_down_time_cnt_r == 4'd0);    // the register decrease to zero 
             assign AcqUpNumberLeftMore_w      = (acq_up_time_cnt_r > acq_down_time_cnt_r);
             assign AcqUpNumberInitMore_w      = (acq_up_time_limit_r > acq_down_time_limit_r);
         // the judge result combination of the comparation result     
-            assign AcqRising_w          = (acq_period_counter_r == 12'd0);
+            assign AcqRising_w          = (acq_period_counter_r == 16'd0);
             assign BaudRising_w         = AcqRising_w & (acq_up_time_cnt_r == 4'd0) & (acq_down_time_cnt_r == 4'd0);
             assign AcqTimeUpSelected_w  = (AcqUpNumberReachLimit_w & AcqDownNumberReachLimit_w & AcqUpNumberInitMore_w) 
                                         | (~AcqUpNumberReachLimit_w& AcqDownNumberReachLimit_w ) 

@@ -125,11 +125,11 @@ module CtrlCore(
             input           p_RxTimeOut_i,          // Rx time out flag, 1-time out occur, 0-no error
             input [15:0]    RxFIFO_Level_i,         // bytes number in the Rx fifo
         // extend function signal(Data link level)
-            output          p_RxFrame_Func_En_o,    // Data link level protocol function enable control
-            input [27:0]    RxFrameInfo_i,          // Data link level protocol function extension
+            // output          p_RxFrame_Func_En_o,    // Data link level protocol function enable control
+            // input [27:0]    RxFrameInfo_i,          // Data link level protocol function extension
             input [15:0]    AnsDelayTime_i,         // The interval between the last tx bit and the first rx bit, count the AcqSig
-            input           p_RxFrame_Empty_i,      // No Received frame
-            output          n_RxFrameInfo_Rd_o,     // Read frame informatoin control signal, negative enable     
+            // input           p_RxFrame_Empty_i,      // No Received frame
+            // output          n_RxFrameInfo_Rd_o,     // Read frame informatoin control signal, negative enable     
     // Rx & Tx encode control control output
         output          p_ParityEnable_o,
         output          p_BigEnd_o,

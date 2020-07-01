@@ -71,15 +71,15 @@ module ByteAnalyseV2(
         input   [11:0]  byte_i,
         input           Byte_Synch_i,
     // the interface with the Time Stamp Module
-        input   [3:0]   acqurate_stamp_i,
-        input   [11:0]  millisecond_stamp_i,
-        input   [31:0]  second_stamp_i,
+        // input   [3:0]   acqurate_stamp_i,
+        // input   [11:0]  millisecond_stamp_i,
+        // input   [31:0]  second_stamp_i,
     // the control register
         input           p_ParityEnable_i,
         input           p_BigEnd_i,
     // the frame fifo interface
-        input           n_rd_frame_fifo_i,
-        output  [27:0]  frame_info_o,
+        // input           n_rd_frame_fifo_i,
+        // output  [27:0]  frame_info_o,
     // the interface with the parity generator module
         output  [7:0]   ParityCalData_o,
         output          p_ParityCalTrigger_o,
@@ -98,24 +98,24 @@ module ByteAnalyseV2(
             reg [2:0]       frame_error_r/*Synthesis syn_preserve = 1*/;
             reg [7:0]       fifo_data_r;        // the data that sent to the fifo
             reg             n_we_r;             // the we signal of the fifo
-            reg             n_rd_frame_fifo_r;  // 
-            reg [2:0]       rd_frame_fifo_shift_r;
+            // reg             n_rd_frame_fifo_r;  // 
+            // reg [2:0]       rd_frame_fifo_shift_r;
             reg [7:0]       parity_error_num_r; // the parity error number    
         // the time stamp
-            reg [31:0]  t0_s_stamp_r;
-            reg [11:0]  t0_ms_stamp_r;
-            reg [3:0]   t0_100us_stamp_r;   
+            // reg [31:0]  t0_s_stamp_r;
+            // reg [11:0]  t0_ms_stamp_r;
+            // reg [3:0]   t0_100us_stamp_r;   
         // the frame info recognize register
-            reg [7:0]   byte_interval_cnt_r;    // the frame interval counter
-            reg [7:0]   byte_num_cnt_r;         // the frame byte number counter
-            reg [3:0]   frame_num_cnt_r;        // indicate that how many frame left in the  fifo
-            reg         new_frame_sig_r;        // indicate that this byte belong to another frame
+            // reg [7:0]   byte_interval_cnt_r;    // the frame interval counter
+            // reg [7:0]   byte_num_cnt_r;         // the frame byte number counter
+            // reg [3:0]   frame_num_cnt_r;        // indicate that how many frame left in the  fifo
+            // reg         new_frame_sig_r;        // indicate that this byte belong to another frame
         // Frame information buffer
-            reg [27:0]  frame0_info_r;
-            reg [27:0]  frame1_info_r;
-            reg [27:0]  frame2_info_r;  
-            reg [27:0]  frame3_info_r;
-            reg [27:0]  frame_info_output_r;        
+            // reg [27:0]  frame0_info_r;
+            // reg [27:0]  frame1_info_r;
+            // reg [27:0]  frame2_info_r;  
+            // reg [27:0]  frame3_info_r;
+            // reg [27:0]  frame_info_output_r;        
     // wire definition
         // control signal
             wire [7:0]  big_end_data_w; 
@@ -193,13 +193,13 @@ module ByteAnalyseV2(
                                                 ||  (frame_error_r[2]&frame_error_r[0])
                                             ) ;
         // Frame0 and Frame1 logic definition
-            assign frame0_stamp_ms_w = frame0_info_r[17:16];
-            assign frame0_stamp_us_w = frame0_info_r[15:12];
-            assign frame0_byte_num_w = frame0_info_r[11:00];
-            assign frame3_stamp_ms_w = frame3_info_r[17:16];
-            assign frame3_stamp_us_w = frame3_info_r[15:12];
-            assign frame3_byte_num_w = frame3_info_r[11:00];
-            assign frame_info_o      = frame_info_output_r;
+            // assign frame0_stamp_ms_w = frame0_info_r[17:16];
+            // assign frame0_stamp_us_w = frame0_info_r[15:12];
+            // assign frame0_byte_num_w = frame0_info_r[11:00];
+            // assign frame3_stamp_ms_w = frame3_info_r[17:16];
+            // assign frame3_stamp_us_w = frame3_info_r[15:12];
+            // assign frame3_byte_num_w = frame3_info_r[11:00];
+            // assign frame_info_o      = frame_info_output_r;
     // Basic function module
         // state machine
             always @(posedge clk or negedge rst) begin

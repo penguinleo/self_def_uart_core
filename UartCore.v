@@ -58,9 +58,9 @@ module UartCore(
         output [7:0]    DataBus_o,     
         output          p_IrqSig_o, 
     // the time stamp input
-        input [3:0]     acqurate_stamp_i,
-        input [11:0]    millisecond_stamp_i,
-        input [31:0]    second_stamp_i,
+        // input [3:0]     acqurate_stamp_i,
+        // input [11:0]    millisecond_stamp_i,
+        // input [31:0]    second_stamp_i,
     // Uart port
         input           Rx_i,
         output          Tx_o
@@ -73,12 +73,12 @@ module UartCore(
     wire [15:0] RxFIFO_Level_w;
     wire [15:0] RxTimeOutSet_w;
     wire [15:0] RxTimeCnt_w;
-    wire [27:0] RxFrameInfo_w;
+    // wire [27:0] RxFrameInfo_w;
     wire [7:0]  TxData_w;
     wire [7:0]  RxData_w;
     wire [15:0] TxFIFO_Level_w;
     wire [7:0]  ParityErrorNum_w;    // put it in the control core // del when added
-    wire        p_RxFrame_Func_En_w;
+    // wire        p_RxFrame_Func_En_w;
     wire        p_ParityEnable_w;
     wire        p_BigEnd_w;
     wire        ParityMethod_w; 
@@ -129,11 +129,11 @@ module UartCore(
             .RxTimeOutSet_o(RxTimeOutSet_w),
             .p_RxTimeOut_i(p_RxTimeOut_w),
             .RxFIFO_Level_i(RxFIFO_Level_w),
-            .p_RxFrame_Func_En_o(p_RxFrame_Func_En_w),
-            .RxFrameInfo_i(RxFrameInfo_w),
+            // .p_RxFrame_Func_En_o(p_RxFrame_Func_En_w),
+            // .RxFrameInfo_i(RxFrameInfo_w),
             .AnsDelayTime_i(RxTimeCnt_w),
-            .p_RxFrame_Empty_i(p_RxFrame_Empty_w),
-            .n_RxFrameInfo_Rd_o(n_RxFrameInfo_Rd_w),
+            // .p_RxFrame_Empty_i(p_RxFrame_Empty_w),
+            // .n_RxFrameInfo_Rd_o(n_RxFrameInfo_Rd_w),
         // Rx & Tx encode control output
             .p_ParityEnable_o(p_ParityEnable_w),
             .p_BigEnd_o(p_BigEnd_w),
@@ -157,7 +157,7 @@ module UartCore(
             .n_Rd_i(n_RxFIFO_Rd_w),
             .n_Clr_i(n_RxFIFO_Clr_w),
             .p_Enable_i(p_RxCoreEn_w),
-            .p_FrameFunctionEnable_i(p_RxFrame_Func_En_w),
+            // .p_FrameFunctionEnable_i(p_RxFrame_Func_En_w),
             .n_RxFrameInfo_Rd_i(n_RxFrameInfo_Rd_w),
         // fifo status signal
             .p_Empty_o(p_RxFIFO_Empty_w),
@@ -165,8 +165,8 @@ module UartCore(
             .p_Full_o(p_RxFIFO_Full_w),
             .p_Over_o(p_RxFIFO_Over_w),
             .RxFifoLevel_o(RxFIFO_Level_w),
-            .RxFrameInfo(RxFrameInfo_w),
-            .p_RxFrame_Empty_o(p_RxFrame_Empty_w),
+            // .RxFrameInfo(RxFrameInfo_w),
+            // .p_RxFrame_Empty_o(p_RxFrame_Empty_w),
             .p_RxParityErr_o(p_RxParityErr_w),
             .p_RxFrameErr_o(p_RxFrameErr_w),
         // Rx and Tx encode control output
@@ -184,9 +184,9 @@ module UartCore(
             .BaudSig_i(BaudSig_w),
             .AcqNumPerBit_i(AcqNumPerBit_w),
         // time stamp module
-            .acqurate_stamp_i(acqurate_stamp_i),
-            .millisecond_stamp_i(millisecond_stamp_i),
-            .second_stamp_i(second_stamp_i),
+            // .acqurate_stamp_i(acqurate_stamp_i),
+            // .millisecond_stamp_i(millisecond_stamp_i),
+            // .second_stamp_i(second_stamp_i),
         // error counter
             .ParityErrorNum_o(ParityErrorNum_w),
         // the receive signal

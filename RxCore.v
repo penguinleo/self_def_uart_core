@@ -70,7 +70,7 @@ module RxCore(
         input           n_Rd_i,         // the fifo read signal
         input           n_Clr_i,	    // empty the fifo
         input           p_Enable_i,     // module Enable signal
-        input           p_FrameFunctionEnable_i,
+        // input           p_FrameFunctionEnable_i,
         input           n_RxFrameInfo_Rd_i, // the rd signal for frame information
     // fifo status signal
         output          p_Empty_o,  // the fifo is empty
@@ -78,8 +78,8 @@ module RxCore(
         output          p_Full_o,
         output          p_Over_o,
         output [15:0]   RxFifoLevel_o,
-        output [27:0]   RxFrameInfo,
-        output          p_RxFrame_Empty_o,
+        // output [27:0]   RxFrameInfo,
+        // output          p_RxFrame_Empty_o,
         output          p_RxParityErr_o,
         output          p_RxFrameErr_o,
     // Rx and Tx encode control signal
@@ -97,9 +97,9 @@ module RxCore(
         input 			BaudSig_i,
         input [3:0]     AcqNumPerBit_i,  
     // time stamp input
-		input [3:0]		acqurate_stamp_i,
-		input [11:0]	millisecond_stamp_i,
-		input [31:0]	second_stamp_i,  
+		// input [3:0]		acqurate_stamp_i,
+		// input [11:0]	millisecond_stamp_i,
+		// input [31:0]	second_stamp_i,  
     // error counter
         output [7:0]    ParityErrorNum_o,
     // the rx signal
@@ -168,7 +168,7 @@ module RxCore(
         .ParityResult_o(ParityResult_w)
         );
 
-    ByteAnalyseV2 ByteAnalyse(
+    ByteAnalyseV3 ByteAnalyse(
       	.clk(clk),
 		.rst(rst),
 		.n_we_o(n_we_w),
@@ -176,13 +176,8 @@ module RxCore(
 		.BaudSig_i(BaudSig_i),
 		.byte_i(Byte_w),
 		.Byte_Synch_i(Byte_Synch_w),
-		.acqurate_stamp_i(acqurate_stamp_i),
-		.millisecond_stamp_i(millisecond_stamp_i),
-		.second_stamp_i(second_stamp_i),
 		.p_ParityEnable_i(p_ParityEnable_i),
 		.p_BigEnd_i(p_BigEnd_i),
-		.n_rd_frame_fifo_i(n_RxFrameInfo_Rd_i),
-		.frame_info_o(RxFrameInfo),
 		.ParityCalData_o(ParityData_w),
 		.p_ParityCalTrigger_o(p_ParityCalTrigger_w),
 		.ParityResult_i(ParityResult_w),
